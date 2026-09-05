@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://adenzia04-ui.github.io/layla-pro/sitemap.xml
