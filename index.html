@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Layla Pro — a prayer app for iPhone</title>
-<meta name="description" content="Layla Pro is a prayer app for iPhone: prayer times drawn as the sun's arc, a thirty-minute prayer lock, a year of prayer in 365 dots, a Tahajjud globe lit by everyone praying with you, friends who can see whether you prayed today, and widgets in nine colours.">
+<title>Layla Pro — a prayer app for iPhone and Android</title>
+<meta name="description" content="Layla Pro is a prayer app for iPhone and Android: prayer times drawn as the sun's arc, a thirty-minute prayer lock, a year of prayer in 365 dots, a Tahajjud globe lit by everyone praying with you, friends who can see whether you prayed today, and widgets in nine colours.">
 <link rel="canonical" href="https://adenzia04-ui.github.io/layla-pro/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Layla Pro">
 <meta property="og:title" content="Layla Pro — keep your prayers with you">
-<meta property="og:description" content="Prayer times, a prayer lock, a year of dots, a Tahajjud globe, friends and widgets. For iPhone.">
+<meta property="og:description" content="Prayer times, a prayer lock, a year of dots, a Tahajjud globe, friends and widgets. For iPhone and Android.">
 <meta property="og:url" content="https://adenzia04-ui.github.io/layla-pro/">
 <meta property="og:image" content="https://adenzia04-ui.github.io/layla-pro/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Layla Pro — keep your prayers with you">
-<meta name="twitter:description" content="Prayer times, a prayer lock, a year of dots, a Tahajjud globe, friends and widgets. For iPhone.">
+<meta name="twitter:description" content="Prayer times, a prayer lock, a year of dots, a Tahajjud globe, friends and widgets. For iPhone and Android.">
 <meta name="twitter:image" content="https://adenzia04-ui.github.io/layla-pro/og.png">
 <meta name="theme-color" content="#060D1B">
 <link rel="icon" href="icon.png">
@@ -34,6 +34,7 @@
    CONTACT is where the footer's "Contact" goes. */
 window.LAYLA = {
   STORE_URL: "",
+  PLAY_URL: "",
   CONTACT: "https://github.com/adenzia04-ui/layla-pro/issues"
 };
 </script>
@@ -227,7 +228,7 @@ window.LAYLA = {
         <span class="ar" lang="ar" dir="rtl" aria-hidden="true">ليلى</span>
       </div>
       <p class="tagline">Keep your prayers with you.</p>
-      <p class="lede">A prayer app for iPhone. Times drawn as the sun moves, a shield that holds your other apps while you pray, a year of prayer in 365 dots, a globe lit by everyone praying Tahajjud tonight, and friends who can see whether you prayed today. Built by one person, in the colours of the night.</p>
+      <p class="lede">A prayer app for iPhone and Android. Times drawn as the sun moves, a shield that holds your other apps while you pray, a year of prayer in 365 dots, a globe lit by everyone praying Tahajjud tonight, and friends who can see whether you prayed today. Built by one person, in the colours of the night.</p>
       <div class="hero-actions">
         <a class="btn big" href="#get" data-store>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
@@ -235,7 +236,7 @@ window.LAYLA = {
         </a>
         <a class="btn ghost big" href="#prayer">See everything inside</a>
       </div>
-      <p class="hero-note">iPhone · iOS 17 and later · Prayer times, the shield, streaks and Tahajjud are free for everyone.</p>
+      <p class="hero-note">iPhone, iOS 17 and later. Android coming, with two differences noted below. Prayer times, streaks and Tahajjud are free for everyone.</p>
     </div>
     <div class="hero-visual">
       <canvas id="globe" width="1040" height="1040" aria-label="The Earth at night, with points of light where people are praying Tahajjud"></canvas>
@@ -295,6 +296,7 @@ window.LAYLA = {
             <li><b>Confirm with your prayer mat.</b> Tap that you prayed, then point the camera at your mat. Layla Pro recognises it on the phone, marks the prayer, and the shield drops.</li>
             <li><b>Thirty minutes, then it lets go on its own.</b> Prayed or not, the shield releases half an hour after the prayer begins. It is a nudge, not a cage.</li>
             <li><b>Only a confirmed prayer counts</b> toward your streak. Nothing is inferred from movement or screen time.</li>
+            <li><b>On Android it is a nudge, not a shield.</b> Android gives no app the power to hold another one closed, so Layla Pro brings the prayer screen back instead and you can always step past it. The shield described here is the iPhone version.</li>
           </ul>
         </div>
         <div class="lock-steps" aria-label="The three ways the shield releases">
@@ -461,6 +463,7 @@ window.LAYLA = {
         <ul class="points">
           <li><b>Nine colour sets.</b> Midnight, Emerald, Rose, Ember, Violet, Ocean, Sapphire, Slate and Sand. Every widget follows one set; tap a stone and they redraw within a minute. The app itself stays in Midnight.</li>
           <li><b>The mark in the corner</b> of every one, at eighteen points.</li>
+          <li><b>iPhone only, for now.</b> The widgets and the Live Activity are built on WidgetKit. Their Android counterparts are not written yet, so the Android app does not offer them, or the colour sets.</li>
         </ul>
       </div>
       <figure class="fig" data-shot="widgets"><div class="device"><picture><source srcset="assets/screens/widgets.webp" type="image/webp"><img src="assets/screens/widgets.jpg" width="590" height="1280" loading="lazy" alt="Widget colours: a preview of the prayer times widget in Midnight, and nine stones to choose from: Midnight, Emerald, Rose, Ember, Violet, Ocean, Sapphire, Slate and Sand"></picture></div><figcaption>Widgets &amp; colours</figcaption></figure>
@@ -565,11 +568,15 @@ window.LAYLA = {
   <div class="wrap">
     <picture><source srcset="assets/mark.webp" type="image/webp"><img src="assets/mark.png" width="179" height="360" loading="lazy" alt=""></picture>
     <h2>Keep your prayers with you.</h2>
-    <p id="get-note">Layla Pro is coming to the App Store for iPhone. The listing link will appear here the day it is live.</p>
+    <p id="get-note">Layla Pro is coming to the App Store and to Google Play. Each link will appear here the day that listing is live.</p>
     <div class="row">
       <a class="btn big" href="#get" data-store>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
         App Store<span class="soon">coming</span>
+      </a>
+      <a class="btn big ghost" href="#get" data-play>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1zm12.5 6.2L13 5.4 4.6 1c-.2-.1-.4-.1-.6 0l12.1 7.5zM17.3 9.3l-2.7 2.7 2.7 2.7 3.3-1.9c.9-.5.9-1.6 0-2.1l-3.3-1.4zM4 23c.2.1.4.1.6 0l8.4-4.4 3.1-3.1L4 23z"/></svg>
+        Google Play<span class="soon">coming</span>
       </a>
     </div>
   </div>
@@ -589,7 +596,7 @@ window.LAYLA = {
     </div>
     <div class="built">
       <p class="ar" lang="ar" dir="rtl">ليلى · اجعل صلاتك معك</p>
-      <p>Built for iPhone.</p>
+      <p>Built for iPhone and Android.</p>
     </div>
   </div>
 </footer>

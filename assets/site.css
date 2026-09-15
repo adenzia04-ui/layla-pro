@@ -55,7 +55,7 @@ p{margin:0}
    word "coming" beside it, so nobody is sent to a dead link. */
 .btn .soon{font-weight:500;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.7;padding-left:.3rem;border-left:1px solid rgba(6,13,27,.25)}
 .btn.ghost .soon{border-left-color:var(--line)}
-.btn[data-store="live"] .soon{display:none}
+.btn[data-store="live"] .soon,.btn[data-play="live"] .soon{display:none}
 
 /* ── device frame: a rounded phone, thin bezel, nothing painted on ─── */
 .device{width:min(var(--dw,280px),100%);aspect-ratio:590/1280;border-radius:2.4rem;padding:6px;background:#17294A;box-shadow:0 0 0 1px rgba(246,241,231,.14),0 40px 70px -35px rgba(0,0,0,.95);margin-inline:auto}
