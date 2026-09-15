@@ -88,7 +88,7 @@ window.LAYLA = {
   /* prayer arc */
   .arc-head{display:flex;justify-content:space-between;align-items:baseline;font-size:.8rem;color:var(--faint)}
   .arc-head b{color:var(--cream);font-family:var(--display);font-size:1.3rem;font-weight:600}
-  .countdown{font-variant-numeric:tabular-nums;font-family:var(--display);font-size:2.4rem;font-weight:700;letter-spacing:-.03em;line-height:1;margin:.3rem 0 .6rem}
+  .countdown{font-variant-numeric:tabular-nums;font-family:var(--display);font-size:2.4rem;font-weight:700;letter-spacing:-.03em;line-height:1;margin:.3rem 0 .2rem}
   .countdown small{font-size:.74rem;color:var(--faint);font-family:var(--body);font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-left:.5rem}
   svg.arc,svg.night{width:100%;height:auto;display:block;overflow:visible}
   .arc text,.night text{font-family:var(--body);font-size:11px;fill:var(--mist);font-weight:500}
@@ -269,7 +269,7 @@ window.LAYLA = {
         <div class="drawn" aria-hidden="true">
           <div class="arc-head"><b>Asr</b><span>next prayer</span></div>
           <div class="countdown"><span id="cd">1:42:07</span><small>until Asr</small></div>
-          <svg class="arc" viewBox="0 0 470 210">
+          <svg class="arc" viewBox="0 -44 470 254">
             <defs>
               <linearGradient id="arcg" x1="0" x2="1"><stop offset="0" stop-color="#1D3A63"/><stop offset=".45" stop-color="#D9B26A"/><stop offset="1" stop-color="#1D3A63"/></linearGradient>
               <radialGradient id="sun"><stop offset="0" stop-color="#F0D9A8"/><stop offset=".5" stop-color="#D9B26A"/><stop offset="1" stop-color="#D9B26A" stop-opacity="0"/></radialGradient>
@@ -342,13 +342,13 @@ window.LAYLA = {
       <div>
         <div class="drawn" aria-hidden="true">
           <div class="arc-head"><b>Tonight's window</b><span>Maghrib to Fajr</span></div>
-          <svg class="night" viewBox="0 0 420 150">
+          <svg class="night" viewBox="0 -12 420 162">
             <defs><linearGradient id="ng" x1="0" x2="1"><stop offset="0" stop-color="#1D3A63"/><stop offset=".5" stop-color="#F0D9A8"/><stop offset="1" stop-color="#1D3A63"/></linearGradient></defs>
             <path d="M 30 120 Q 210 -40 390 120" fill="none" stroke="url(#ng)" stroke-width="1.5"/>
             <path d="M 196 40 A 22 22 0 1 1 174 26 A 17 17 0 1 0 196 40 Z" fill="#F0D9A8"/>
             <g transform="translate(30,120)"><circle r="3.5" fill="#0B1B34" stroke="#D9B26A"/><text y="20" text-anchor="middle">Maghrib 19:04</text></g>
             <g transform="translate(390,120)"><circle r="3.5" fill="#0B1B34" stroke="#D9B26A"/><text y="20" text-anchor="middle">Fajr 5:12</text></g>
-            <g transform="translate(300,66)"><circle r="4" fill="#F0D9A8"/><text y="-12" text-anchor="middle" style="fill:#F0D9A8">Last third begins 2:18</text></g>
+            <g transform="translate(300,66)"><circle r="4" fill="#F0D9A8"/><text y="26" text-anchor="middle" style="fill:#F0D9A8">Last third begins 2:18</text></g>
           </svg>
           <div class="presence"><span class="lights"><i></i><i></i><i></i></span>Others praying tonight glow on the globe for four hours.</div>
         </div>
