@@ -1,0 +1,82 @@
+/* Layla Pro — shared stylesheet for index.html and add.html.
+   Tokens, type, nav, buttons, device frame, footer. Page-specific rules
+   stay inline in each page. */
+
+:root{
+  --midnight:#060D1B; --navy:#0B1B34; --elev:#12294A; --line:#1D3A63;
+  --gold:#D9B26A; --gold-soft:#F0D9A8; --gold-dim:#8A7038;
+  --cream:#F6F1E7; --mist:rgba(246,241,231,.72); --faint:rgba(246,241,231,.46); --hair:rgba(246,241,231,.10);
+  --emerald:#2E9E80; --amber:#E0A23C; --rose:#CF5C6B; --ember:#F07A3C;
+  --pulse:#4DA6FF; --pulse-soft:#9CD2FF;
+  --display:'Outfit',ui-sans-serif,system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --body:'Inter',ui-sans-serif,system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --arabic:'Amiri','Scheherazade New','Noto Naskh Arabic',serif;
+  --measure:36rem; --wrap:70rem;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--midnight);color:var(--cream);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img{max-width:100%;display:block}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance;font-weight:600}
+p{margin:0}
+.wrap{width:min(var(--wrap),calc(100% - 2.5rem));margin-inline:auto}
+.measure{max-width:var(--measure)}
+.eyebrow{font-family:var(--body);font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:.7rem;margin:0}
+.eyebrow::before{content:"";width:1.6rem;height:1px;background:var(--gold-dim)}
+.lede{color:var(--mist);max-width:var(--measure);font-size:1.05rem}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+.skip{position:absolute;left:1rem;top:-4rem;z-index:50;background:var(--gold);color:var(--midnight);padding:.6rem 1rem;border-radius:.5rem;font-weight:600;text-decoration:none}
+.skip:focus{top:1rem}
+
+/* ── nav ───────────────────────────────────────── */
+.nav{position:sticky;top:0;z-index:20;background:rgba(6,13,27,.86);border-bottom:1px solid var(--hair)}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){.nav{background:rgba(6,13,27,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:3.6rem;gap:1rem}
+.brand{display:flex;align-items:center;gap:.6rem;text-decoration:none;font-family:var(--display);font-weight:600;font-size:1.12rem;letter-spacing:-.01em;white-space:nowrap}
+.brand img{width:1.1rem;height:auto}
+.nav ul{list-style:none;margin:0;padding:0;display:flex;gap:1.5rem;font-size:.86rem;color:var(--mist);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav ul::-webkit-scrollbar{display:none}
+.nav ul a{text-decoration:none;white-space:nowrap}
+.nav ul a:hover{color:var(--cream)}
+@media (max-width:640px){.nav ul{display:none}}
+
+/* ── buttons ───────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:.55rem;text-decoration:none;font-weight:600;font-size:.92rem;padding:.72rem 1.2rem;border-radius:999px;border:1px solid var(--gold-dim);color:var(--midnight);background:var(--gold);transition:background .15s ease,border-color .15s ease;white-space:nowrap}
+.btn:hover{background:var(--gold-soft)}
+.btn svg{width:1rem;height:1rem;flex:none}
+.btn.ghost{background:transparent;color:var(--cream);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--gold-dim);background:rgba(217,178,106,.06)}
+.btn.small{padding:.5rem .9rem;font-size:.82rem}
+.btn.big{font-size:1rem;padding:.9rem 1.5rem}
+/* App Store buttons before the listing is live: the same button, with the
+   word "coming" beside it, so nobody is sent to a dead link. */
+.btn .soon{font-weight:500;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.7;padding-left:.3rem;border-left:1px solid rgba(6,13,27,.25)}
+.btn.ghost .soon{border-left-color:var(--line)}
+.btn[data-store="live"] .soon{display:none}
+
+/* ── device frame: a rounded phone, thin bezel, nothing painted on ─── */
+.device{width:min(var(--dw,280px),100%);aspect-ratio:590/1280;border-radius:2.4rem;padding:6px;background:#17294A;box-shadow:0 0 0 1px rgba(246,241,231,.14),0 40px 70px -35px rgba(0,0,0,.95);margin-inline:auto}
+.device img,.device picture{width:100%;height:100%;object-fit:cover;border-radius:2rem;background:var(--midnight)}
+.device picture{display:block}
+.device picture img{border-radius:2rem}
+.device.small{--dw:240px;border-radius:2.1rem}
+.device.small img,.device.small picture,.device.small picture img{border-radius:1.75rem}
+
+/* ── footer ────────────────────────────────────── */
+footer{border-top:1px solid var(--hair);padding:2.6rem 0 3rem;font-size:.84rem;color:var(--faint)}
+footer .wrap{display:grid;gap:1.6rem;grid-template-columns:1fr auto;align-items:end}
+@media (max-width:640px){footer .wrap{grid-template-columns:1fr}}
+footer .fmark{display:flex;align-items:center;gap:.8rem;color:var(--cream);font-family:var(--display);font-weight:600;font-size:1.05rem}
+footer .fmark img{width:1.1rem;height:auto}
+footer nav{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:.9rem}
+footer nav a{text-decoration:none;color:var(--mist)}
+footer nav a:hover{color:var(--cream)}
+footer .ar{font-family:var(--arabic);color:var(--gold-dim);font-size:1.05rem}
+footer .built{text-align:right}
+@media (max-width:640px){footer .built{text-align:left}}
+
+/* ── stars canvas (hero / invite) ──────────────── */
+.stars{position:absolute;inset:0;pointer-events:none;opacity:.9}
