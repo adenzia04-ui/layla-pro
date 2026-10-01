@@ -216,8 +216,13 @@ window.LAYLA = {
 #maker .two{align-items:center;gap:3rem}
 #maker .maker-shot{position:relative;margin:0;justify-self:center;width:min(360px,78%)}
 #maker .maker-shot::before{content:"";position:absolute;left:50%;top:4%;width:124%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(217,178,106,.20),rgba(217,178,106,.05) 46%,rgba(217,178,106,0) 70%);pointer-events:none}
-#maker .maker-shot::after{content:"";position:absolute;left:50%;bottom:2%;width:76%;height:1.1rem;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),rgba(0,0,0,0) 70%);pointer-events:none}
-#maker .maker-shot img{position:relative;display:block;width:100%;height:auto;-webkit-mask-image:linear-gradient(180deg,#000 68%,rgba(0,0,0,.4) 88%,transparent 100%);mask-image:linear-gradient(180deg,#000 68%,rgba(0,0,0,.4) 88%,transparent 100%)}
+/* The photograph is cropped at the hands, so a straight fade would cut across
+   them. Instead the page's own colour is drawn over the bottom as a wide soft
+   ellipse: the figure stands into shadow, and there is no horizontal edge. */
+#maker .maker-shot::after{content:"";position:absolute;left:-14%;right:-14%;bottom:-1px;height:19%;pointer-events:none;background:radial-gradient(150% 190% at 50% 126%,var(--midnight) 24%,rgba(6,13,27,.92) 42%,rgba(6,13,27,.62) 60%,rgba(6,13,27,.22) 76%,rgba(6,13,27,0) 90%)}
+#maker .maker-shot img{position:relative;display:block;width:100%;height:auto}
+#maker .bio{font-size:1.06rem;color:var(--cream)}
+#maker .bio b{font-family:var(--display);font-weight:600;color:var(--gold-soft)}
 #maker .sign{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:500;color:var(--gold-soft);text-decoration:none;border-bottom:1px solid rgba(217,178,106,.35);padding-bottom:.15rem;justify-self:start;transition:border-color .15s ease}
 #maker .sign:hover{border-color:var(--gold)}
 @media (max-width:860px){#maker .maker-shot{width:min(300px,72%)}}
@@ -752,6 +757,7 @@ window.LAYLA = {
       <div class="copy">
         <p class="eyebrow">Who builds it</p>
         <h2>One person, every screen.</h2>
+        <p class="bio"><b>Aden Zia</b> &mdash; a developer in Malaysia. This is the whole team.</p>
         <p class="lede">Layla Pro is designed, written and maintained by one developer. The prayer times, the Qur&rsquo;an with its word-by-word timings, the prayer-mat scan, the globe and every pixel of this page come from the same pair of hands.</p>
         <p class="lede">That is why the app is quiet, and why seven percent of every subscription is set aside before anything else. If something here is wrong, there is one person to tell, and the reply comes from whoever wrote the code &mdash; because it is the same person.</p>
         <a class="sign" href="https://github.com/adenzia04-ui/layla-pro/issues" rel="noopener">Say hello</a>
