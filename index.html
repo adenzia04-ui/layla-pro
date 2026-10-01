@@ -212,6 +212,16 @@ window.LAYLA = {
 @media (max-width:760px){.strip .wrap{grid-template-columns:repeat(3,1fr);gap:1.2rem .8rem}.strip div:nth-child(4),.strip div:nth-child(5){grid-column:span 1}}
 @media (max-width:420px){.strip .wrap{grid-template-columns:repeat(2,1fr)}.strip div:last-child{grid-column:1 / -1}}
 
+/* ── the person who builds it ──────────────────── */
+#maker .two{align-items:center;gap:3rem}
+#maker .maker-shot{position:relative;margin:0;justify-self:center;width:min(360px,78%)}
+#maker .maker-shot::before{content:"";position:absolute;left:50%;top:4%;width:124%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(217,178,106,.20),rgba(217,178,106,.05) 46%,rgba(217,178,106,0) 70%);pointer-events:none}
+#maker .maker-shot::after{content:"";position:absolute;left:50%;bottom:2%;width:76%;height:1.1rem;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),rgba(0,0,0,0) 70%);pointer-events:none}
+#maker .maker-shot img{position:relative;display:block;width:100%;height:auto;-webkit-mask-image:linear-gradient(180deg,#000 68%,rgba(0,0,0,.4) 88%,transparent 100%);mask-image:linear-gradient(180deg,#000 68%,rgba(0,0,0,.4) 88%,transparent 100%)}
+#maker .sign{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:500;color:var(--gold-soft);text-decoration:none;border-bottom:1px solid rgba(217,178,106,.35);padding-bottom:.15rem;justify-self:start;transition:border-color .15s ease}
+#maker .sign:hover{border-color:var(--gold)}
+@media (max-width:860px){#maker .maker-shot{width:min(300px,72%)}}
+
 /* ── download cards ─────────────────────────────── */
 .get-row{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr));width:100%;margin:2rem auto 0;max-width:62rem;text-align:left}
 .dl{display:flex;gap:.95rem;align-items:flex-start;padding:1.05rem 1.15rem;border:1px solid var(--line);border-radius:1.1rem;background:linear-gradient(180deg,rgba(18,41,74,.5),rgba(11,27,52,.25));text-decoration:none;transition:border-color .15s ease,background .15s ease,transform .15s ease}
@@ -727,6 +737,29 @@ window.LAYLA = {
   </div>
 </section>
 
+<div class="rule"></div>
+
+<!-- ── THE MAKER ──────────────────────────────── -->
+<section id="maker">
+  <div class="wrap">
+    <div class="two">
+      <figure class="maker-shot">
+        <picture>
+          <source srcset="assets/maker.webp" type="image/webp">
+          <img src="assets/maker.png" width="760" height="1280" loading="lazy" alt="The person who builds Layla Pro">
+        </picture>
+      </figure>
+      <div class="copy">
+        <p class="eyebrow">Who builds it</p>
+        <h2>One person, every screen.</h2>
+        <p class="lede">Layla Pro is designed, written and maintained by one developer. The prayer times, the Qur&rsquo;an with its word-by-word timings, the prayer-mat scan, the globe and every pixel of this page come from the same pair of hands.</p>
+        <p class="lede">That is why the app is quiet, and why seven percent of every subscription is set aside before anything else. If something here is wrong, there is one person to tell, and the reply comes from whoever wrote the code &mdash; because it is the same person.</p>
+        <a class="sign" href="https://github.com/adenzia04-ui/layla-pro/issues" rel="noopener">Say hello</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── GET IT ─────────────────────────────────── -->
 <section class="cta" id="get">
   <div class="wrap">
@@ -934,7 +967,7 @@ window.LAYLA = {
   bar.className = 'progress'; document.body.appendChild(bar);
 
   // ── reveal on enter
-  var marks = document.querySelectorAll('.head, .copy, .fig, .drawn, .points, .dl, .strip .wrap > div, .panels figure, .plans, .wlist div, .milestones, .sets');
+  var marks = document.querySelectorAll('.head, .copy, .fig, .drawn, .points, .dl, .strip .wrap > div, .panels figure, .maker-shot, .plans, .wlist div, .milestones, .sets');
   for (var i=0;i<marks.length;i++) marks[i].classList.add('reveal');
   if ('IntersectionObserver' in window && !reduce){
     var io = new IntersectionObserver(function(es){
