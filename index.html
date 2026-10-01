@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Layla Pro — a prayer app for iPhone and Android</title>
-<meta name="description" content="Layla Pro is a prayer app for iPhone and Android: prayer times drawn as the sun's arc, a thirty-minute prayer lock, a year of prayer in 365 dots, a Tahajjud globe lit by everyone praying with you, friends who can see whether you prayed today, and widgets in nine colours.">
+<meta name="description" content="Prayer times drawn as an arc, a shield that holds your apps while you pray, the whole Qur’an with word-by-word recitation, Tahajjud on a living globe, and friends who see whether you prayed. Download for Android now.">
 <link rel="canonical" href="https://adenzia04-ui.github.io/layla-pro/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Layla Pro">
@@ -50,8 +50,12 @@ window.LAYLA = {
   .wordmark h1 span{font-weight:500;color:var(--gold)}
   .wordmark .ar{font-family:var(--arabic);font-size:2rem;color:var(--gold);line-height:1;padding-bottom:.5rem}
   .tagline{font-family:var(--display);font-size:clamp(1.5rem,3vw,2.1rem);font-weight:500;letter-spacing:-.015em;line-height:1.2}
-  .hero-actions{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center}
   .hero-note{font-size:.82rem;color:var(--faint)}
+  .hero-more{flex-basis:100%;margin-top:.1rem;font-size:.88rem;font-weight:500;color:var(--mist);text-decoration:none}
+  .hero-more span{border-bottom:1px solid rgba(246,241,231,.22);padding-bottom:.12rem;transition:color .15s ease,border-color .15s ease}
+  .hero-more:hover{color:var(--gold-soft)}
+  .hero-more:hover span{border-color:var(--gold-dim)}
   /* the globe with the phone standing in front of it */
   .hero-visual{position:relative;aspect-ratio:1;width:100%;max-width:560px;justify-self:center}
   .hero-visual canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -193,6 +197,86 @@ window.LAYLA = {
   .cta .row{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center}
 
   @media (prefers-reduced-motion:reduce){.dot,.lights i{animation:none}}
+
+/* ── what is inside: the strip under the hero ───── */
+.strip{border-block:1px solid var(--hair);background:linear-gradient(180deg,rgba(11,27,52,.5),rgba(6,13,27,0))}
+.strip .wrap{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;padding:1.5rem 0}
+.strip div{text-align:center;min-width:0}
+.strip b{display:block;font-family:var(--display);font-size:1.6rem;font-weight:600;color:var(--gold-soft);line-height:1.1;font-variant-numeric:tabular-nums}
+.strip span{display:block;font-size:.76rem;color:var(--faint);margin-top:.3rem;line-height:1.35}
+@media (max-width:760px){.strip .wrap{grid-template-columns:repeat(3,1fr);gap:1.2rem .8rem}.strip div:nth-child(4),.strip div:nth-child(5){grid-column:span 1}}
+@media (max-width:420px){.strip .wrap{grid-template-columns:repeat(2,1fr)}.strip div:last-child{grid-column:1 / -1}}
+
+/* ── download cards ─────────────────────────────── */
+.get-row{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));margin:2rem auto 0;max-width:62rem;text-align:left}
+.dl{display:flex;gap:.95rem;align-items:flex-start;padding:1.05rem 1.15rem;border:1px solid var(--line);border-radius:1.1rem;background:linear-gradient(180deg,rgba(18,41,74,.5),rgba(11,27,52,.25));text-decoration:none;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.dl:hover{border-color:var(--gold-dim);background:linear-gradient(180deg,rgba(18,41,74,.78),rgba(11,27,52,.45));transform:translateY(-2px)}
+.dl.primary{border-color:rgba(217,178,106,.5);background:linear-gradient(180deg,rgba(217,178,106,.15),rgba(217,178,106,.03));box-shadow:0 18px 40px -28px rgba(217,178,106,.75)}
+.dl.primary:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(217,178,106,.22),rgba(217,178,106,.06))}
+.dl>svg{width:1.55rem;height:1.55rem;flex:none;margin-top:.15rem;color:var(--gold-soft)}
+.dl b{display:block;font-family:var(--display);font-size:1.02rem;font-weight:600;color:var(--cream);letter-spacing:-.01em}
+.dl b i{font-style:normal;font-family:var(--body);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line);border-radius:999px;padding:.12rem .45rem;margin-left:.45rem;vertical-align:.12em;white-space:nowrap}
+.dl b i.live{color:var(--midnight);background:var(--gold);border-color:var(--gold)}
+.dl small{display:block;color:var(--mist);font-size:.82rem;line-height:1.5;margin-top:.3rem}
+.dl[data-store="live"] b i,.dl[data-play="live"] b i{display:none}
+.fineprint{max-width:40rem;margin:1.5rem auto 0;color:var(--faint);font-size:.82rem;line-height:1.6}
+
+/* ── hero: a little more depth behind the type ──── */
+.hero::after{content:"";position:absolute;inset:auto 0 0;height:9rem;background:linear-gradient(180deg,rgba(6,13,27,0),var(--midnight));pointer-events:none}
+.hero-actions .btn svg{width:1.15rem;height:1.15rem}
+
+
+/* ── scroll progress ────────────────────────────── */
+.progress{position:fixed;top:0;left:0;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,var(--gold-dim),var(--gold),var(--gold-soft));z-index:40;pointer-events:none}
+
+/* ── reveal on enter ────────────────────────────── */
+@media (prefers-reduced-motion:no-preference){
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .75s cubic-bezier(.2,.75,.25,1),transform .75s cubic-bezier(.2,.75,.25,1)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+  .points.in li{animation:riseIn .6s cubic-bezier(.2,.75,.25,1) backwards}
+  .points.in li:nth-child(1){animation-delay:.05s}.points.in li:nth-child(2){animation-delay:.13s}
+  .points.in li:nth-child(3){animation-delay:.21s}.points.in li:nth-child(4){animation-delay:.29s}
+  .points.in li:nth-child(5){animation-delay:.37s}.points.in li:nth-child(6){animation-delay:.45s}
+  @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+}
+
+/* ── the pinned phone: one stage, three screens ──── */
+.scrolly{margin-top:1rem}
+.scrolly-grid{display:grid;grid-template-columns:1fr minmax(260px,24rem);gap:3rem;align-items:start}
+.scrolly-steps{display:flex;flex-direction:column}
+.step{min-height:78vh;display:flex;flex-direction:column;justify-content:center;gap:.9rem;max-width:34rem;opacity:.3;transition:opacity .45s ease}
+.step.on{opacity:1}
+.step .num{font-family:var(--display);font-size:.78rem;font-weight:600;letter-spacing:.2em;color:var(--gold-dim)}
+.step h3{font-size:clamp(1.4rem,3.2vw,2rem)}
+.step p{color:var(--mist)}
+.scrolly-stage{position:sticky;top:5.5rem;height:min(76vh,40rem);display:flex;align-items:center;justify-content:center}
+.stage-inner{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.scrolly-stage .device{--dw:252px;position:relative}
+.scrolly-stage .device .shot{position:absolute;inset:6px;border-radius:2rem;overflow:hidden;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.75,.25,1)}
+.scrolly-stage .device .shot.is-on{opacity:1;transform:none}
+.scrolly-stage .device .shot img{width:100%;height:100%;object-fit:cover;border-radius:2rem}
+.stage-dots{display:flex;gap:.45rem}
+.stage-dots i{width:.4rem;height:.4rem;border-radius:999px;background:var(--line);transition:background .3s ease,width .3s ease}
+.stage-dots i.on{background:var(--gold);width:1.2rem}
+@media (max-width:860px){
+  .scrolly-grid{grid-template-columns:1fr;gap:.6rem}
+  .scrolly-stage{position:sticky;top:3.7rem;height:auto;order:-1;padding:.7rem 0 .9rem;background:var(--midnight)}
+  .scrolly-stage::after{content:'';position:absolute;left:0;right:0;top:100%;height:2.1rem;background:linear-gradient(180deg,var(--midnight),rgba(6,13,27,0));pointer-events:none}
+  .scrolly-stage .device{--dw:158px}
+  .stage-inner{gap:.8rem}
+  .step{min-height:58vh;justify-content:flex-start;padding-top:1.4rem}
+}
+
+/* ── points in two columns, for the short list ───── */
+.points.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:.1rem 2rem;margin-top:2.6rem}
+
+/* ── hero parallax ──────────────────────────────── */
+@media (prefers-reduced-motion:no-preference){
+  .hero-visual{will-change:transform}
+  .strip b{transition:color .3s ease}
+}
+
 </style>
 </head>
 <body>
@@ -203,6 +287,7 @@ window.LAYLA = {
     <a class="brand" href="#top"><img src="assets/mark.webp" width="179" height="360" alt="">Layla Pro</a>
     <ul>
       <li><a href="#prayer">Prayer</a></li>
+      <li><a href="#quran">Qur’an</a></li>
       <li><a href="#tahajjud">Tahajjud</a></li>
       <li><a href="#friends">Friends</a></li>
       <li><a href="#soul">Soul</a></li>
@@ -210,10 +295,7 @@ window.LAYLA = {
       <li><a href="#premium">Premium</a></li>
       <li><a href="#privacy">Privacy</a></li>
     </ul>
-    <a class="btn small" href="#get" data-store>
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
-      App Store<span class="soon">coming</span>
-    </a>
+    <a class="btn small" href="#get">Get the app</a>
   </div>
 </nav>
 
@@ -230,13 +312,17 @@ window.LAYLA = {
       <p class="tagline">Keep your prayers with you.</p>
       <p class="lede">A prayer app for iPhone and Android. Times drawn as the sun moves, a shield that holds your other apps while you pray, a year of prayer in 365 dots, a globe lit by everyone praying Tahajjud tonight, and friends who can see whether you prayed today. Built by one person, in the colours of the night.</p>
       <div class="hero-actions">
-        <a class="btn big" href="#get" data-store>
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
-          App Store<span class="soon">coming</span>
+        <a class="btn big" href="https://github.com/adenzia04-ui/layla/releases/download/v1.0.0-android/LaylaPro-1.0.0-android.apk" rel="noopener" data-apk>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.7-2.9a.35.35 0 0 0-.6-.35l-1.72 2.98A10.6 10.6 0 0 0 12 8c-1.8 0-3.5.43-5 1.23L5.3 6.25a.35.35 0 1 0-.6.35l1.7 2.9C3.6 11 1.8 13.3 1.5 16h21c-.3-2.7-2.1-5-4.9-6.5zM7 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+          Download for Android
         </a>
-        <a class="btn ghost big" href="#prayer">See everything inside</a>
+        <a class="btn ghost big" href="#get" data-store>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
+          Download for iPhone<span class="soon">soon</span>
+        </a>
+        <a class="hero-more" href="#get"><span>See every way to get it</span></a>
       </div>
-      <p class="hero-note">iPhone, iOS 17 and later. Android coming, with two differences noted below. Prayer times, streaks and Tahajjud are free for everyone.</p>
+      <p class="hero-note">Android: install it today, straight from here — 235 MB, Android 8 and later. On the App Store and Google Play shortly. Prayer times, the Qur’an, streaks and Tahajjud are free for everyone.</p>
     </div>
     <div class="hero-visual">
       <canvas id="globe" width="1040" height="1040" aria-label="The Earth at night, with points of light where people are praying Tahajjud"></canvas>
@@ -247,6 +333,17 @@ window.LAYLA = {
     </div>
   </div>
 </header>
+
+<!-- ── WHAT IS INSIDE ─────────────────────────── -->
+<div class="strip" aria-label="What is inside">
+  <div class="wrap">
+    <div><b>604</b><span>mushaf pages, as printed</span></div>
+    <div><b>18</b><span>reciters, word by word</span></div>
+    <div><b>267</b><span>duas, read aloud</span></div>
+    <div><b>99</b><span>names of Allah</span></div>
+    <div><b>365</b><span>dots, one a day</span></div>
+  </div>
+</div>
 
 <!-- ── PRAYER ─────────────────────────────────── -->
 <section id="prayer">
@@ -326,6 +423,62 @@ window.LAYLA = {
   </div>
 </section>
 <div class="rule"></div>
+
+
+<!-- ── QUR'AN ─────────────────────────────────── -->
+<section id="quran">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="eyebrow">Qur’an</p>
+      <h2>The whole Qur’an, and a voice that shows you the word.</h2>
+      <p class="lede">The Madinah mushaf exactly as it is printed, and beside it a reader with the Arabic, the transliteration and up to five translations at once. Press play and the word being recited lights as you hear it — on the page as well as in the reader.</p>
+    </div>
+  </div>
+
+  <div class="scrolly" id="scrolly">
+    <div class="wrap">
+      <div class="scrolly-grid">
+        <div class="scrolly-steps">
+          <div class="step" data-shot="0">
+            <p class="num">01</p>
+            <h3>Every surah, where you left off at the top.</h3>
+            <p>By surah, by juz, or in the order revealed. Star the ones you are memorising and they rise to the top. Search finds a surah by name, by meaning or by number.</p>
+          </div>
+          <div class="step" data-shot="1">
+            <p class="num">02</p>
+            <h3>The word, as it is said.</h3>
+            <p>Eight of the eighteen voices carry timings measured against their own recordings, so the gold moves from word to word with the reciter. Five translations can stack to compare, and Ibn Kathir unfolds under any ayah.</p>
+          </div>
+          <div class="step" data-shot="2">
+            <p class="num">03</p>
+            <h3>The printed page, and the voice on it.</h3>
+            <p>All 604 Madinah pages as they are printed. The same gold follows the recitation across the page, the book turns itself as the voice reaches the next one, and a touch on any word starts from that ayah.</p>
+          </div>
+        </div>
+
+        <div class="scrolly-stage" aria-hidden="true">
+          <div class="stage-inner">
+            <div class="device">
+              <picture class="shot is-on"><source srcset="assets/screens/quran.webp" type="image/webp"><img src="assets/screens/quran.jpg" width="576" height="1280" loading="lazy" alt=""></picture>
+              <picture class="shot"><source srcset="assets/screens/reader.webp" type="image/webp"><img src="assets/screens/reader.jpg" width="576" height="1280" loading="lazy" alt=""></picture>
+              <picture class="shot"><source srcset="assets/screens/mushaf.webp" type="image/webp"><img src="assets/screens/mushaf.jpg" width="576" height="1280" loading="lazy" alt=""></picture>
+            </div>
+            <div class="stage-dots"><i class="on"></i><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <ul class="points cols reveal">
+      <li><b>Eighteen reciters,</b> from Alafasy, Abdul Basit and Al-Husary to Al-Luhaidan.</li>
+      <li><b>Ayah by ayah, up to ten times each,</b> for memorising.</li>
+      <li><b>It keeps playing</b> with the screen off, on the lock screen.</li>
+      <li><b>Download any surah</b> in any voice and listen with no signal.</li>
+    </ul>
+  </div>
+</section>
 
 <!-- ── TAHAJJUD ───────────────────────────────── -->
 <section id="tahajjud">
@@ -568,17 +721,27 @@ window.LAYLA = {
   <div class="wrap">
     <picture><source srcset="assets/mark.webp" type="image/webp"><img src="assets/mark.png" width="179" height="360" loading="lazy" alt=""></picture>
     <h2>Keep your prayers with you.</h2>
-    <p id="get-note">Layla Pro is coming to the App Store and to Google Play. Each link will appear here the day that listing is live.</p>
-    <div class="row">
-      <a class="btn big" href="#get" data-store>
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
-        App Store<span class="soon">coming</span>
+    <p id="get-note">Android first, today. The App Store and Google Play listings are in review, and each button here goes live the day its listing does.</p>
+
+    <div class="get-row">
+      <a class="dl primary" href="https://github.com/adenzia04-ui/layla/releases/download/v1.0.0-android/LaylaPro-1.0.0-android.apk" rel="noopener" data-apk>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.7-2.9a.35.35 0 0 0-.6-.35l-1.72 2.98A10.6 10.6 0 0 0 12 8c-1.8 0-3.5.43-5 1.23L5.3 6.25a.35.35 0 1 0-.6.35l1.7 2.9C3.6 11 1.8 13.3 1.5 16h21c-.3-2.7-2.1-5-4.9-6.5zM7 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+        <span><b>Download for Android <i class="live">available now</i></b>
+        <small>Version 1.0.0 · 235 MB · Android 8 and later. Open it on your phone and tap the file when it lands.</small></span>
       </a>
-      <a class="btn big ghost" href="#get" data-play>
+      <a class="dl" href="#get" data-store>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
+        <span><b>App Store <i>coming</i></b>
+        <small>iPhone, iOS 17 and later. With widgets, the Live Activity and the Screen Time shield.</small></span>
+      </a>
+      <a class="dl" href="#get" data-play>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1zm12.5 6.2L13 5.4 4.6 1c-.2-.1-.4-.1-.6 0l12.1 7.5zM17.3 9.3l-2.7 2.7 2.7 2.7 3.3-1.9c.9-.5.9-1.6 0-2.1l-3.3-1.4zM4 23c.2.1.4.1.6 0l8.4-4.4 3.1-3.1L4 23z"/></svg>
-        Google Play<span class="soon">coming</span>
+        <span><b>Google Play <i>coming</i></b>
+        <small>The same Android app, with updates delivered for you. In review now.</small></span>
       </a>
     </div>
+
+    <p class="fineprint">Installing the file above, Android will ask once whether to allow apps from your browser. If you later move to the Google Play copy, remove this one first — Play signs its own builds, and Android keeps the two apart.</p>
   </div>
 </section>
 </main>
@@ -750,5 +913,93 @@ window.LAYLA = {
   }
 })();
 </script>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── scroll progress bar
+  var bar = document.createElement('div');
+  bar.className = 'progress'; document.body.appendChild(bar);
+
+  // ── reveal on enter
+  var marks = document.querySelectorAll('.head, .copy, .fig, .drawn, .points, .dl, .strip div, .panels figure, .plans, .wlist div, .milestones, .sets');
+  for (var i=0;i<marks.length;i++) marks[i].classList.add('reveal');
+  if ('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: .12 });
+    for (var k=0;k<marks.length;k++) io.observe(marks[k]);
+  } else {
+    for (var m=0;m<marks.length;m++) marks[m].classList.add('in');
+  }
+
+  // ── numbers in the strip count up once
+  var counted = false;
+  var strip = document.querySelector('.strip');
+  function countUp(){
+    if (counted || !strip) return;
+    var r = strip.getBoundingClientRect();
+    if (r.top > innerHeight - 60 || r.bottom < 0) return;
+    counted = true;
+    strip.querySelectorAll('b').forEach(function(el){
+      var target = parseInt(el.textContent, 10); if (isNaN(target)) return;
+      if (reduce) return;
+      var t0 = 0;
+      function tick(ts){
+        if (!t0) t0 = ts;
+        var p = Math.min(1, (ts - t0) / 900), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * e);
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      el.textContent = '0'; requestAnimationFrame(tick);
+    });
+  }
+
+  // ── the pinned phone: which step is in the middle
+  var steps = [].slice.call(document.querySelectorAll('#scrolly .step'));
+  var shots = [].slice.call(document.querySelectorAll('#scrolly .shot'));
+  var dots  = [].slice.call(document.querySelectorAll('#scrolly .stage-dots i'));
+  var shown = -1;
+  function stage(){
+    if (!steps.length) return;
+    var mid = innerHeight * 0.52, best = 0, bestD = Infinity;
+    for (var i=0;i<steps.length;i++){
+      var r = steps[i].getBoundingClientRect(), c = r.top + r.height/2, d = Math.abs(c - mid);
+      if (d < bestD){ bestD = d; best = i; }
+    }
+    for (var j=0;j<steps.length;j++) steps[j].classList.toggle('on', j === best);
+    if (best !== shown){
+      shown = best;
+      for (var s=0;s<shots.length;s++) shots[s].classList.toggle('is-on', s === best);
+      for (var t=0;t<dots.length;t++) dots[t].classList.toggle('on', t === best);
+    }
+  }
+
+  // ── hero parallax
+  var visual = document.querySelector('.hero-visual');
+  var hero = document.querySelector('.hero');
+
+  var ticking = false;
+  function onScroll(){
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(function(){
+      var y = scrollY || pageYOffset;
+      var doc = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = 'scaleX(' + (doc > 0 ? Math.min(1, y / doc) : 0) + ')';
+      if (visual && !reduce){
+        var hr = hero.getBoundingClientRect();
+        if (hr.bottom > 0) visual.style.transform = 'translate3d(0,' + (y * 0.12) + 'px,0)';
+      }
+      stage(); countUp();
+      ticking = false;
+    });
+  }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  onScroll();
+})();
+</script>
+
 </body>
 </html>
