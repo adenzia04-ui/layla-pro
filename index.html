@@ -219,7 +219,7 @@ window.LAYLA = {
 /* The photograph is cropped at the hands, so a straight fade would cut across
    them. Instead the page's own colour is drawn over the bottom as a wide soft
    ellipse: the figure stands into shadow, and there is no horizontal edge. */
-#maker .maker-shot::after{content:"";position:absolute;left:-14%;right:-14%;bottom:-1px;height:19%;pointer-events:none;background:radial-gradient(150% 190% at 50% 126%,var(--midnight) 24%,rgba(6,13,27,.92) 42%,rgba(6,13,27,.62) 60%,rgba(6,13,27,.22) 76%,rgba(6,13,27,0) 90%)}
+#maker .maker-shot::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(6,13,27,0) 44%,rgba(6,13,27,.06) 54%,rgba(6,13,27,.16) 62%,rgba(6,13,27,.30) 70%,rgba(6,13,27,.47) 77%,rgba(6,13,27,.64) 84%,rgba(6,13,27,.79) 90%,rgba(6,13,27,.91) 95%,var(--midnight) 100%)}
 #maker .maker-shot img{position:relative;display:block;width:100%;height:auto}
 #maker .bio{font-size:1.06rem;color:var(--cream)}
 #maker .bio b{font-family:var(--display);font-weight:600;color:var(--gold-soft)}
