@@ -22,7 +22,6 @@
         b.removeAttribute('aria-describedby');
       } else {
         b.setAttribute(store.attr, 'soon');
-        b.setAttribute('aria-label', store.name + ', link coming');
       }
     }
   }

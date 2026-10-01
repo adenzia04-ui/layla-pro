@@ -42,7 +42,8 @@ window.LAYLA = {
   /* ── hero ───────────────────────────────────── */
   .hero{position:relative;overflow:hidden;padding:4.5rem 0 4rem}
   .hero .wrap{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:3rem}
-  @media (max-width:900px){.hero{padding-top:3rem}.hero .wrap{grid-template-columns:1fr;gap:2.5rem}}
+  @media (max-width:900px){.hero{padding-top:3rem}.hero .wrap{grid-template-columns:minmax(0,1fr);gap:2.5rem}
+    .hero-actions .btn.big{white-space:normal;text-align:center}}
   .hero-copy{display:grid;gap:1.5rem;z-index:1}
   .wordmark{display:flex;align-items:flex-end;gap:1rem}
   .wordmark img{width:2.6rem;height:auto}
@@ -144,13 +145,17 @@ window.LAYLA = {
   .trio .fig{width:min(220px,45%)}
   .two .trio{margin-top:0}
   .two .trio .fig{width:min(200px,45%)}
+  @media (max-width:860px){
+    #soul-shots{width:100%;max-width:calc(400px + 1.5rem);margin-inline:auto}
+    #soul-shots .fig{width:min(200px,calc(50% - .75rem))}
+  }
   .trio .device{--dw:100%}
   .empty{width:min(240px,45%);aspect-ratio:590/1280;border:1px dashed var(--line);border-radius:2.1rem;display:grid;place-items:center;color:var(--faint);font-size:.8rem;text-align:center;padding:1rem}
 
   /* sisters: one paragraph, set apart only by whitespace */
   .quiet{padding:4rem 0}
   .quiet .wrap{max-width:40rem}
-  .quiet p{color:var(--mist);font-size:1.02rem}
+  #sisters .note{color:var(--mist);font-size:1.02rem}
   .quiet .eyebrow{margin-bottom:1rem}
 
   /* widgets: nine colour sets, the real values from the app */
@@ -190,7 +195,7 @@ window.LAYLA = {
 
   /* cta */
   .cta{text-align:center}
-  .cta .wrap{display:grid;gap:1.3rem;justify-items:center}
+  .cta .wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:1.3rem;justify-items:center}
   .cta img{width:3.4rem;height:auto}
   .cta h2{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700}
   .cta p{color:var(--mist);max-width:32rem}
@@ -208,7 +213,7 @@ window.LAYLA = {
 @media (max-width:420px){.strip .wrap{grid-template-columns:repeat(2,1fr)}.strip div:last-child{grid-column:1 / -1}}
 
 /* ── download cards ─────────────────────────────── */
-.get-row{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));margin:2rem auto 0;max-width:62rem;text-align:left}
+.get-row{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fit,minmax(min(17rem,100%),1fr));width:100%;margin:2rem auto 0;max-width:62rem;text-align:left}
 .dl{display:flex;gap:.95rem;align-items:flex-start;padding:1.05rem 1.15rem;border:1px solid var(--line);border-radius:1.1rem;background:linear-gradient(180deg,rgba(18,41,74,.5),rgba(11,27,52,.25));text-decoration:none;transition:border-color .15s ease,background .15s ease,transform .15s ease}
 .dl:hover{border-color:var(--gold-dim);background:linear-gradient(180deg,rgba(18,41,74,.78),rgba(11,27,52,.45));transform:translateY(-2px)}
 .dl.primary{border-color:rgba(217,178,106,.5);background:linear-gradient(180deg,rgba(217,178,106,.15),rgba(217,178,106,.03));box-shadow:0 18px 40px -28px rgba(217,178,106,.75)}
@@ -219,7 +224,7 @@ window.LAYLA = {
 .dl b i.live{color:var(--midnight);background:var(--gold);border-color:var(--gold)}
 .dl small{display:block;color:var(--mist);font-size:.82rem;line-height:1.5;margin-top:.3rem}
 .dl[data-store="live"] b i,.dl[data-play="live"] b i{display:none}
-.fineprint{max-width:40rem;margin:1.5rem auto 0;color:var(--faint);font-size:.82rem;line-height:1.6}
+.cta .fineprint{max-width:40rem;margin:1.5rem auto 0;color:var(--faint);font-size:.82rem;line-height:1.6}
 
 /* ── hero: a little more depth behind the type ──── */
 .hero::after{content:"";position:absolute;inset:auto 0 0;height:9rem;background:linear-gradient(180deg,rgba(6,13,27,0),var(--midnight));pointer-events:none}
@@ -233,6 +238,8 @@ window.LAYLA = {
 @media (prefers-reduced-motion:no-preference){
   .reveal{opacity:0;transform:translateY(26px);transition:opacity .75s cubic-bezier(.2,.75,.25,1),transform .75s cubic-bezier(.2,.75,.25,1)}
   .reveal.in{opacity:1;transform:none}
+  /* A revealed block inside another one would compose both transforms. */
+  .reveal .reveal{opacity:1;transform:none;transition:none}
   .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
   .points.in li{animation:riseIn .6s cubic-bezier(.2,.75,.25,1) backwards}
   .points.in li:nth-child(1){animation-delay:.05s}.points.in li:nth-child(2){animation-delay:.13s}
@@ -250,10 +257,10 @@ window.LAYLA = {
 .step .num{font-family:var(--display);font-size:.78rem;font-weight:600;letter-spacing:.2em;color:var(--gold-dim)}
 .step h3{font-size:clamp(1.4rem,3.2vw,2rem)}
 .step p{color:var(--mist)}
-.scrolly-stage{position:sticky;top:5.5rem;height:min(76vh,40rem);display:flex;align-items:center;justify-content:center}
+.scrolly-stage{--stage-h:min(76vh,40rem);position:sticky;top:5.5rem;height:var(--stage-h);display:flex;align-items:center;justify-content:center}
 .stage-inner{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
-.scrolly-stage .device{--dw:252px;position:relative}
-.scrolly-stage .device .shot{position:absolute;inset:6px;border-radius:2rem;overflow:hidden;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.75,.25,1)}
+.scrolly-stage .device{--dw:min(252px,calc((var(--stage-h) - 2.5rem) * 590 / 1280));position:relative}
+.scrolly-stage .device .shot{position:absolute;inset:6px;width:auto;height:auto;border-radius:2rem;overflow:hidden;opacity:0;transform:scale(1.03);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.75,.25,1)}
 .scrolly-stage .device .shot.is-on{opacity:1;transform:none}
 .scrolly-stage .device .shot img{width:100%;height:100%;object-fit:cover;border-radius:2rem}
 .stage-dots{display:flex;gap:.45rem}
@@ -266,6 +273,10 @@ window.LAYLA = {
   .scrolly-stage .device{--dw:158px}
   .stage-inner{gap:.8rem}
   .step{min-height:58vh;justify-content:flex-start;padding-top:1.4rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .step,.scrolly-stage .device .shot,.stage-dots i{transition:none}
+  .scrolly-stage .device .shot{transform:none}
 }
 
 /* ── points in two columns, for the short list ───── */
@@ -318,7 +329,7 @@ window.LAYLA = {
         </a>
         <a class="btn ghost big" href="#get" data-store>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
-          Download for iPhone<span class="soon">soon</span>
+          Download for iPhone <span class="soon">soon</span>
         </a>
         <a class="hero-more" href="#get"><span>See every way to get it</span></a>
       </div>
@@ -600,7 +611,7 @@ window.LAYLA = {
 <section class="quiet" id="sisters">
   <div class="wrap">
     <p class="eyebrow">For sisters</p>
-    <p>If you chose "sister" when you set up the app, Layla Pro offers a prayer pause for the days of menstruation. While it is on, the days are simply not counted: nothing is recorded as missed, nothing is owed, and the streak carries on where it left off. Those days show as a neutral dash rather than a cross. The pause is never visible to friends or circles, and nothing about it is stored on their side. It is not shown to anyone who chose "brother".</p>
+    <p class="note">If you chose "sister" when you set up the app, Layla Pro offers a prayer pause for the days of menstruation. While it is on, the days are simply not counted: nothing is recorded as missed, nothing is owed, and the streak carries on where it left off. Those days show as a neutral dash rather than a cross. The pause is never visible to friends or circles, and nothing about it is stored on their side. It is not shown to anyone who chose "brother".</p>
   </div>
 </section>
 <div class="rule"></div>
@@ -751,7 +762,7 @@ window.LAYLA = {
     <div>
       <div class="fmark"><picture><source srcset="assets/mark.webp" type="image/webp"><img src="assets/mark.png" width="179" height="360" loading="lazy" alt=""></picture>Layla Pro</div>
       <nav aria-label="Footer">
-        <a href="#" id="contact-link">Contact</a>
+        <a href="https://github.com/adenzia04-ui/layla-pro/issues" rel="noopener" id="contact-link">Contact</a>
         <a href="#privacy">Privacy</a>
         <a href="add.html">Friend links</a>
       </nav>
@@ -885,9 +896,9 @@ window.LAYLA = {
   }
 
   // ── countdown that actually ticks
-  var cd = document.getElementById('cd'), secs = 1*3600+42*60+7;
+  var cd = document.getElementById('cd'), START = 1*3600+42*60+7, secs = START;
   if (!reduce) setInterval(function(){
-    secs = secs>0 ? secs-1 : 0;
+    secs = secs>0 ? secs-1 : START;
     var h=Math.floor(secs/3600), m=Math.floor(secs%3600/60), s=secs%60;
     cd.textContent = h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
   },1000);
@@ -923,7 +934,7 @@ window.LAYLA = {
   bar.className = 'progress'; document.body.appendChild(bar);
 
   // ── reveal on enter
-  var marks = document.querySelectorAll('.head, .copy, .fig, .drawn, .points, .dl, .strip div, .panels figure, .plans, .wlist div, .milestones, .sets');
+  var marks = document.querySelectorAll('.head, .copy, .fig, .drawn, .points, .dl, .strip .wrap > div, .panels figure, .plans, .wlist div, .milestones, .sets');
   for (var i=0;i<marks.length;i++) marks[i].classList.add('reveal');
   if ('IntersectionObserver' in window && !reduce){
     var io = new IntersectionObserver(function(es){

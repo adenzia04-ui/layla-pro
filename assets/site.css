@@ -42,6 +42,9 @@ p{margin:0}
 .nav ul a{text-decoration:none;white-space:nowrap}
 .nav ul a:hover{color:var(--cream)}
 @media (max-width:640px){.nav ul{display:none}}
+/* Below ~342px the brand and the "App Store coming" button no longer fit
+   side by side. Pin the brand and drop the decorative glyph; the words stay. */
+@media (max-width:360px){.nav .brand{flex:none}.nav .btn.small svg{display:none}}
 
 /* ── buttons ───────────────────────────────────── */
 .btn{display:inline-flex;align-items:center;gap:.55rem;text-decoration:none;font-weight:600;font-size:.92rem;padding:.72rem 1.2rem;border-radius:999px;border:1px solid var(--gold-dim);color:var(--midnight);background:var(--gold);transition:background .15s ease,border-color .15s ease;white-space:nowrap}
