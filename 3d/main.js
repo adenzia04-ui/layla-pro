@@ -410,7 +410,7 @@ function build() {
   // the key, each dot in its own colour
   const legend = label([], { w: 720, h: 80 });
   const drawLegend = () => {
-    const c = legend.material.map.image, g = c.getContext('2d'); g.clearRect(0, 0, 720, 80); g.textBaseline = 'middle'; g.font = '500 26px Satoshi, sans-serif';
+    const c = legend.material.map.image, g = c.getContext('2d'); g.clearRect(0, 0, 720, 80); g.textBaseline = 'middle'; g.textAlign = 'left'; g.font = '500 26px Satoshi, sans-serif';
     let x = 60;
     [['#2e9e80', 'all five'], ['#e0a23c', 'still open'], ['#cf5c6b', 'missed one']].forEach(([col, t]) => {
       g.fillStyle = col; g.beginPath(); g.arc(x, 40, 9, 0, Math.PI * 2); g.fill();
