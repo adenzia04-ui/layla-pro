@@ -268,7 +268,7 @@ function build() {
   const appGeo = new THREE.ExtrudeGeometry(rr(.2, .2, .052), { depth: .03, bevelEnabled: true, bevelThickness: .01, bevelSize: .01, bevelSegments: 3, curveSegments: 10 });
   appGeo.center();
   const APPS = [0xe1306c, 0xff2d55, 0xff0000, 0x1d9bf0, 0x25d366, 0x5865f2, 0xfffc00, 0x222222, 0xe50914, 0xff6f00];
-  const greyC = new THREE.Color(0x4a4e5c);
+  const greyC = new THREE.Color(0x8d93a6);
   const apps = APPS.map((c, i) => { const mat = new THREE.MeshStandardMaterial({ color: c, roughness: .35, metalness: .15, transparent: true });
     const m = new THREE.Mesh(appGeo, mat); m.userData = { base: new THREE.Color(c), ph: i / APPS.length * Math.PI * 2, tilt: rnd() - .5 }; focus.add(m); return m; });
   const shieldRing = new THREE.Mesh(new THREE.TorusGeometry(.42, .012, 16, 120), new THREE.MeshBasicMaterial({ color: gold, transparent: true }));
@@ -276,7 +276,9 @@ function build() {
   const shieldDisc = new THREE.Mesh(new THREE.CircleGeometry(.41, 64), new THREE.MeshBasicMaterial({ color: 0x0d1630, transparent: true, opacity: .82 }));
   shieldDisc.position.z = -.005; focus.add(shieldDisc);
   const shieldText = label([['Dhuhr', '600 80px "Clash Display", sans-serif', '#f7f3ec', 70], ['apps held', '500 34px Satoshi, sans-serif', 'rgba(247,243,236,.7)', 130], ['26 minutes left', '600 36px Satoshi, sans-serif', '#ffb48a', 180]], { w: 420, h: 220 });
-  shieldText.scale.set(.74, .388, 1); shieldText.position.z = .02; focus.add(shieldText);
+  shieldText.scale.set(.74, .388, 1); shieldText.position.z = .03; focus.add(shieldText);
+  // the words sit on the disc, never inside it: drawn last and without a depth test
+  shieldText.material.depthTest = false; shieldText.renderOrder = 10;
 
   /* Asr — the mushaf, opening, the recited word lit in gold */
   const book = new THREE.Group(); props.add(book);
@@ -516,7 +518,7 @@ function build() {
         const r = lerp(.62, .78, hold);
         m.position.set(Math.cos(a) * r, Math.sin(a) * r * .8, lerp(.05, -.25, hold) + Math.sin(a * 2) * .06);
         m.rotation.set(m.userData.tilt * .5, Math.cos(a) * .5, a * .2);
-        m.material.color.copy(m.userData.base).lerp(greyC, hold * .8);
+        m.material.color.copy(m.userData.base).lerp(greyC, hold * .9);
       });
       shieldRing.scale.setScalar(.6 + .4 * hold); shieldRing.material.opacity = hold;
       shieldDisc.scale.setScalar(.6 + .4 * hold); shieldDisc.material.opacity = .82 * hold;
