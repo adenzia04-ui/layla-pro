@@ -31,10 +31,13 @@
    Paste the full listing URL into STORE_URL (for example
    "https://apps.apple.com/app/id1234567890") and every App Store
    button on this site and on add.html links to it and drops "coming".
+   PLAY_URL works the same way for Google Play. While either is empty, its
+   buttons open the launch waitlist, which posts to WAITLIST_URL.
    CONTACT is where the footer's "Contact" goes. */
 window.LAYLA = {
   STORE_URL: "",
   PLAY_URL: "",
+  WAITLIST_URL: "https://layla-waitlist.adenzia04.workers.dev",
   CONTACT: "https://github.com/adenzia04-ui/layla-pro/issues"
 };
 </script>
@@ -338,9 +341,9 @@ window.LAYLA = {
       <p class="tagline">Keep your prayers with you.</p>
       <p class="lede">A prayer app for iPhone and Android. Times drawn as the sun moves, a shield that holds your other apps while you pray, a year of prayer in 365 dots, a globe lit by everyone praying Tahajjud tonight, and friends who can see whether you prayed today. Built by one person, in the colours of the night.</p>
       <div class="hero-actions">
-        <a class="btn big" href="https://github.com/adenzia04-ui/layla/releases/download/v1.0.0-android/LaylaPro-1.0.0-android.apk" rel="noopener" data-apk>
+        <a class="btn big" href="#get" data-play>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.7-2.9a.35.35 0 0 0-.6-.35l-1.72 2.98A10.6 10.6 0 0 0 12 8c-1.8 0-3.5.43-5 1.23L5.3 6.25a.35.35 0 1 0-.6.35l1.7 2.9C3.6 11 1.8 13.3 1.5 16h21c-.3-2.7-2.1-5-4.9-6.5zM7 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
-          Download for Android
+          Download for Android <span class="soon">soon</span>
         </a>
         <a class="btn ghost big" href="#get" data-store>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
@@ -348,7 +351,7 @@ window.LAYLA = {
         </a>
         <a class="hero-more" href="#get"><span>See every way to get it</span></a>
       </div>
-      <p class="hero-note">Android: install it today, straight from here — 235 MB, Android 8 and later. On the App Store and Google Play shortly. Prayer times, the Qur’an, streaks and Tahajjud are free for everyone.</p>
+      <p class="hero-note">Coming to the App Store and Google Play. Tap either button to join the waitlist, and get one email the day it is out. Prayer times, the Qur’an, streaks and Tahajjud are free for everyone.</p>
     </div>
     <div class="hero-visual">
       <canvas id="globe" width="1040" height="1040" aria-label="The Earth at night, with points of light where people are praying Tahajjud"></canvas>
@@ -720,6 +723,7 @@ window.LAYLA = {
       <li><b>The prayer pause is never shared.</b> Not with friends, not with circles, not in any count.</li>
       <li><b>Profile photos are stripped</b> of camera and GPS data before they are stored.</li>
       <li><b>Nothing is inferred.</b> A prayer counts when you say it does.</li>
+      <li><b>The waitlist keeps only your email and your phone type,</b> to send one message on launch day. It is never shared, and never used for anything else.</li>
     </ul>
   </div>
 </section>
@@ -771,27 +775,22 @@ window.LAYLA = {
   <div class="wrap">
     <picture><source srcset="assets/mark.webp" type="image/webp"><img src="assets/mark.png" width="179" height="360" loading="lazy" alt=""></picture>
     <h2>Keep your prayers with you.</h2>
-    <p id="get-note">Android first, today. The App Store and Google Play listings are in review, and each button here goes live the day its listing does.</p>
+    <p id="get-note">Layla Pro is in review on the App Store and Google Play. Pick your phone, leave your email, and you will hear the day it lands.</p>
 
     <div class="get-row">
-      <a class="dl primary" href="https://github.com/adenzia04-ui/layla/releases/download/v1.0.0-android/LaylaPro-1.0.0-android.apk" rel="noopener" data-apk>
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.7-2.9a.35.35 0 0 0-.6-.35l-1.72 2.98A10.6 10.6 0 0 0 12 8c-1.8 0-3.5.43-5 1.23L5.3 6.25a.35.35 0 1 0-.6.35l1.7 2.9C3.6 11 1.8 13.3 1.5 16h21c-.3-2.7-2.1-5-4.9-6.5zM7 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
-        <span><b>Download for Android <i class="live">available now</i></b>
-        <small>Version 1.0.0 · 235 MB · Android 8 and later. Open it on your phone and tap the file when it lands.</small></span>
-      </a>
-      <a class="dl" href="#get" data-store>
+      <a class="dl primary" href="#get" data-store>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>
-        <span><b>App Store <i>coming</i></b>
-        <small>iPhone, iOS 17 and later. With widgets, the Live Activity and the Screen Time shield.</small></span>
+        <span><b>App Store <i>waitlist</i></b>
+        <small>iPhone, iOS 17 and later. With widgets, the Live Activity and the Screen Time shield. Tap to be told the day it is out.</small></span>
       </a>
-      <a class="dl" href="#get" data-play>
+      <a class="dl primary" href="#get" data-play>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.3c-.3.3-.5.8-.5 1.4v16.6c0 .6.2 1.1.5 1.4l.1.1 9.3-9.3v-.2L3.7 2.2l-.1.1zm12.5 6.2L13 5.4 4.6 1c-.2-.1-.4-.1-.6 0l12.1 7.5zM17.3 9.3l-2.7 2.7 2.7 2.7 3.3-1.9c.9-.5.9-1.6 0-2.1l-3.3-1.4zM4 23c.2.1.4.1.6 0l8.4-4.4 3.1-3.1L4 23z"/></svg>
-        <span><b>Google Play <i>coming</i></b>
-        <small>The same Android app, with updates delivered for you. In review now.</small></span>
+        <span><b>Google Play <i>waitlist</i></b>
+        <small>Android 8 and later, with Prayer Focus and the home-screen widgets. Tap to be told the day it is out.</small></span>
       </a>
     </div>
 
-    <p class="fineprint">Installing the file above, Android will ask once whether to allow apps from your browser. If you later move to the Google Play copy, remove this one first — Play signs its own builds, and Android keeps the two apart.</p>
+    <p class="fineprint">One email, on launch day, for the phone you picked. Nothing else is sent, and your address is never shared or sold.</p>
   </div>
 </section>
 </main>
@@ -814,6 +813,7 @@ window.LAYLA = {
   </div>
 </footer>
 
+<script src="assets/waitlist.js"></script>
 <script src="assets/store-link.js"></script>
 <script>
 (function(){

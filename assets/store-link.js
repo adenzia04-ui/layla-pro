@@ -1,13 +1,22 @@
 /* Wires the store buttons to the two links at the top of each page.
    [data-store] is the App Store, [data-play] is Google Play. While a link is
-   empty its button keeps the "coming" tag and points at the page's own
-   "Get it" section, so no visitor is ever sent to a placeholder listing. */
+   empty its button keeps the "coming" tag and opens the launch waitlist
+   (waitlist.js) for that platform, so no visitor is ever sent to a
+   placeholder listing. Without the waitlist script it falls back to the
+   page's own "Get it" section. */
 (function () {
   var cfg = window.LAYLA || {};
   var stores = [
-    { attr: 'data-store', url: (cfg.STORE_URL || '').trim(), name: 'App Store' },
-    { attr: 'data-play', url: (cfg.PLAY_URL || '').trim(), name: 'Google Play' }
+    { attr: 'data-store', url: (cfg.STORE_URL || '').trim(), name: 'App Store', platform: 'ios' },
+    { attr: 'data-play', url: (cfg.PLAY_URL || '').trim(), name: 'Google Play', platform: 'android' }
   ];
+  function waitlistFor(platform) {
+    return function (e) {
+      if (!window.LaylaWaitlist) return;
+      e.preventDefault();
+      window.LaylaWaitlist.open(platform);
+    };
+  }
   var liveNames = [];
   for (var s = 0; s < stores.length; s++) {
     var store = stores[s];
@@ -22,6 +31,8 @@
         b.removeAttribute('aria-describedby');
       } else {
         b.setAttribute(store.attr, 'soon');
+        b.setAttribute('aria-haspopup', 'dialog');
+        b.addEventListener('click', waitlistFor(store.platform));
       }
     }
   }
