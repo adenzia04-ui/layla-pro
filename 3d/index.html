@@ -3,26 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Layla Pro — Keep your prayers with you</title>
-<meta name="description" content="Layla Pro is a prayer app for iPhone and Android: prayer times drawn as the sun moves, Prayer Focus, a year of prayer in 365 dots, the whole Qur'an with eighteen reciters, and Tahajjud on a living globe. Built by one developer in Malaysia.">
-<meta name="theme-color" content="#0a0806">
+<title>Layla Pro — One day, five prayers</title>
+<meta name="description" content="Layla Pro is a prayer app for iPhone and Android. Scroll through one day: prayer times drawn as the sun moves, Prayer Focus, the whole Qur'an, friends, a year of prayer, and Tahajjud on a living globe.">
+<meta name="theme-color" content="#0b1430">
 <link rel="icon" href="../icon.png">
-<meta property="og:title" content="Layla Pro — Keep your prayers with you">
-<meta property="og:description" content="A prayer app for iPhone and Android, built by one person, in the colours of the night.">
+<meta property="og:title" content="Layla Pro — One day, five prayers">
+<meta property="og:description" content="A prayer app for iPhone and Android, built by one person in Malaysia.">
 <meta property="og:image" content="https://adenzia04-ui.github.io/layla-pro/og.png">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600&f[]=satoshi@400,500,700&display=swap">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400..800;1,400..700&display=swap">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css?v=5">
 <script>
-/* Same switch as the main page: paste a store URL and every button for
-   that store links to it. While a URL is empty its buttons open the
-   launch waitlist. */
+/* Paste a store URL here the day a listing goes live; its buttons then link
+   to the store instead of the waitlist. */
 window.LAYLA = {
   STORE_URL: "",
   PLAY_URL: "",
-  WAITLIST_URL: "https://layla-waitlist.adenzia04.workers.dev",
-  CONTACT: "https://github.com/adenzia04-ui/layla-pro/issues"
+  WAITLIST_URL: "https://layla-waitlist.adenzia04.workers.dev"
 };
 </script>
 <script type="importmap">
@@ -32,297 +32,138 @@ window.LAYLA = {
 <body>
 <a class="skip" href="#main">Skip to content</a>
 
-<!-- Loader: the sun sinks to eighteen degrees below the horizon, which is Fajr -->
-<div class="loader" id="loader" aria-hidden="true">
-  <div class="loader__inner">
-    <p class="mono loader__label">Calculating Fajr</p>
-    <p class="loader__deg"><span id="loader-deg">0.0</span><span class="loader__unit">°</span></p>
-    <div class="loader__bar"><i id="loader-bar"></i></div>
-    <p class="mono loader__foot"><span>Sun below the horizon</span><span>Fajr at −18°</span></p>
-  </div>
-</div>
+<!-- the sky: its colours follow the time of day you have scrolled to -->
+<div class="sky" aria-hidden="true"><canvas id="scene"></canvas></div>
 
-<!-- The 3D stage, fixed behind the page -->
-<div class="stage" aria-hidden="true">
-  <canvas id="scene"></canvas>
-  <img class="stage__fallback" src="../assets/earth-night.webp" alt="">
-</div>
-
-<!-- Labels pinned to points in the 3D scene -->
-<div class="anno" id="anno" aria-hidden="true">
-  <svg class="anno__svg"></svg>
-</div>
-
-<div class="grain" aria-hidden="true"></div>
-<div class="cursor" aria-hidden="true"><span class="cursor__label"></span></div>
-
-<header class="nav" id="nav">
-  <a class="nav__brand" href="#top" aria-label="Layla Pro, back to top">
-    <img src="../assets/mark.webp" alt="" width="179" height="360">
-    <span>Layla <em>Pro</em></span>
-  </a>
-  <nav class="nav__links" aria-label="Primary">
-    <a href="#story" data-nav="story"><span class="mono">I</span>The app</a>
-    <a href="#inside" data-nav="inside"><span class="mono">II</span>Inside</a>
-    <a href="#maker" data-nav="maker"><span class="mono">III</span>Maker</a>
-    <a href="#get" data-nav="get"><span class="mono">IV</span>Get it</a>
+<header class="top">
+  <a class="brand" href="#hero"><img src="../assets/mark.webp" alt="" width="179" height="360"><span>Layla Pro</span></a>
+  <nav class="day" aria-label="The day">
+    <a href="#fajr" data-at="fajr"><i></i><span>Fajr</span></a>
+    <a href="#dhuhr" data-at="dhuhr"><i></i><span>Dhuhr</span></a>
+    <a href="#asr" data-at="asr"><i></i><span>Asr</span></a>
+    <a href="#maghrib" data-at="maghrib"><i></i><span>Maghrib</span></a>
+    <a href="#isha" data-at="isha"><i></i><span>Isha</span></a>
   </nav>
-  <div class="nav__meta">
-    <span class="mono nav__clock" title="Your local time"><span id="clock-place">Local</span> <time id="clock">--:--:--</time></span>
-    <a class="btn btn--primary btn--sm" href="#get" data-store>Get Layla Pro</a>
-    <button class="nav__menu mono" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
-  </div>
+  <a class="cta cta--sm" href="#join">Join the waitlist</a>
 </header>
-
-<div class="menu" id="menu" hidden>
-  <nav aria-label="Mobile">
-    <a href="#story" data-nav="story"><span class="mono">I</span>The app</a>
-    <a href="#inside" data-nav="inside"><span class="mono">II</span>Inside</a>
-    <a href="#maker" data-nav="maker"><span class="mono">III</span>Maker</a>
-    <a href="#get" data-nav="get"><span class="mono">IV</span>Get it</a>
-  </nav>
-</div>
 
 <main id="main">
 
-  <!-- HERO -->
-  <section class="hero" id="top" aria-labelledby="hero-title">
-    <p class="eyebrow" data-reveal>A prayer app for iPhone &amp; Android</p>
-    <h1 class="hero__title" id="hero-title"><span class="line"><span>Layla</span></span> <span class="line"><span><em>Pro</em></span></span></h1>
-    <p class="hero__ar" lang="ar" dir="rtl" data-reveal>ليلى · اجعل صلاتك معك</p>
-    <div class="hero__body">
-      <p class="hero__line" data-reveal>Keep your prayers with you. Five times a day, drawn as the sun moves, and a phone that steps aside when it is time to pray.</p>
-      <div class="hero__ctas" data-reveal>
-        <a class="btn btn--primary" href="#get" data-store><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.3 1.9 2.7 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8 2.3-1.3 3.1-2.5c1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.2zM13.9 4.9c.7-.9 1.2-2 1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.4-.6 3.1-1.5z"/></svg>iPhone</a>
-        <a class="btn btn--ghost" href="#get" data-play><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.5l1.7-2.9a.35.35 0 0 0-.6-.35l-1.72 2.98A10.6 10.6 0 0 0 12 8c-1.8 0-3.5.43-5 1.23L5.3 6.25a.35.35 0 1 0-.6.35l1.7 2.9C3.6 11 1.8 13.3 1.5 16h21c-.3-2.7-2.1-5-4.9-6.5zM7 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>Android</a>
-        <span class="mono hero__soon">Join the waitlist · launching soon</span>
-      </div>
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <p class="kicker">A prayer app for iPhone and Android</p>
+    <h1 id="hero-title"><span class="ar" lang="ar">ليلى</span>Layla Pro</h1>
+    <p class="hero__lead">One day, five prayers, and a phone that keeps them with you.</p>
+    <div class="hero__ctas">
+      <a class="cta" href="#join" data-platform="ios">Get it on iPhone</a>
+      <a class="cta cta--line" href="#join" data-platform="android">Get it on Android</a>
     </div>
-    <div class="hero__foot mono" data-reveal>
-      <span class="hero__hint"><i></i>Scroll to follow the sun</span>
-      <span>21.4225° N · 39.8262° E <span class="dim">· Qibla</span></span>
-      <span id="night-third">The night has three thirds</span>
+    <p class="hero__cue"><span></span>Scroll, and the day begins</p>
+  </section>
+
+  <div class="dayline" id="dayline">
+
+    <section class="ch" id="fajr" data-screen="home">
+      <div class="ch__text">
+        <p class="ch__time"><b>05:52</b><span>Fajr <i lang="ar">الفجر</i></span></p>
+        <h2>Begin before the sun does.</h2>
+        <p>Layla Pro opens on the day drawn as one arc, Fajr to Isha. The sun sits where it really is, the next prayer is lit, and a countdown runs beneath it. Every time is worked out on your phone, from where you stand.</p>
+        <ul class="ch__facts"><li>Adhan, chime, bell or soft</li><li>Minutes-before nudges</li><li>Qibla from the same place</li></ul>
+      </div>
+    </section>
+
+    <section class="ch ch--light" id="dhuhr" data-screen="shield">
+      <div class="ch__text">
+        <p class="ch__time"><b>13:09</b><span>Dhuhr <i lang="ar">الظهر</i></span></p>
+        <h2>The middle of a busy day, held still.</h2>
+        <p>When the prayer comes in, Prayer Focus holds the apps you picked for thirty minutes. Open one and the prayer screen covers it. Calls are never held, and Layla Pro itself always opens. On iPhone it is a Screen Time shield; on Android it is a firm nudge you can step past.</p>
+        <ul class="ch__facts"><li>Only the apps you choose</li><li>Thirty minutes, then it lets go</li><li>“I missed this prayer” is always one tap</li></ul>
+      </div>
+    </section>
+
+    <section class="ch ch--light" id="asr" data-screen="mushaf">
+      <div class="ch__text">
+        <p class="ch__time"><b>16:23</b><span>Asr <i lang="ar">العصر</i></span></p>
+        <h2>Ten quiet minutes with the Qur’an.</h2>
+        <p>The Madinah mushaf, all 604 pages as they are printed, with IndoPak and Tajweed beside it. Press play and the word being recited lights in gold as you hear it. Eighteen reciters, over a hundred translations, and any surah ready offline.</p>
+        <ul class="ch__facts"><li>Word-by-word recitation</li><li>Ibn Kathir under any ayah</li><li>Repeat an ayah to memorise</li></ul>
+      </div>
+    </section>
+
+    <section class="ch" id="maghrib" data-screen="friends">
+      <div class="ch__text">
+        <p class="ch__time"><b>19:12</b><span>Maghrib <i lang="ar">المغرب</i></span></p>
+        <h2>Sunset, and the people you pray for.</h2>
+        <p>Share a six-letter code and a friend appears as five dots, one for each prayer, filling as their day is prayed. Send a verse, say MashaAllah on a milestone, keep a forty-day circle. There is no leaderboard, on purpose.</p>
+        <ul class="ch__facts"><li>Five dots, never a rank</li><li>“Quiet for now” hides your numbers</li><li>Jumu’ah: which masjid?</li></ul>
+      </div>
+    </section>
+
+    <section class="ch" id="isha" data-screen="profile">
+      <div class="ch__text">
+        <p class="ch__time"><b>20:22</b><span>Isha <i lang="ar">العشاء</i></span></p>
+        <h2>The day, kept honestly.</h2>
+        <p>A prayer counts when you confirm it, and with Premium you confirm by scanning your prayer mat. Every day becomes a dot in a year of 365: green for all five, amber for still open, rose for a prayer missed.</p>
+        <ul class="ch__facts"><li>Streak, longest streak, prayers, Tahajjud</li><li>Nothing is ever inferred</li><li>A pause for sisters, never shown to anyone</li></ul>
+      </div>
+    </section>
+
+    <section class="ch" id="night" data-screen="tahajjud">
+      <div class="ch__text">
+        <p class="ch__time"><b>02:21</b><span>The last third <i lang="ar">التهجد</i></span></p>
+        <h2>You are not the only one awake.</h2>
+        <p>Layla Pro splits the night from Maghrib to Fajr into thirds and lights the last. Tap “I am praying Tahajjud” and a light appears on the Earth at night, beside everyone else praying. Each light is a five-kilometre area, never a person, and fades after four hours.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="between" id="between" aria-labelledby="between-title">
+    <h2 id="between-title">And between the prayers.</h2>
+    <div class="bento">
+      <article class="tile tile--tall"><img src="../assets/screens/tasbih.webp" alt="The tasbih ring" loading="lazy" width="588" height="1280"><div><h3>Tasbih</h3><p>Seven ways to count, from a gold ring to rose quartz beads. Tap too fast and it asks you to slow down.</p></div></article>
+      <article class="tile"><h3>Mood</h3><p>Anxious, tired, lost, hopeful. Pick one and turn a deck of verses chosen for it, each recited.</p><p class="tile__ar" lang="ar">أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ</p></article>
+      <article class="tile"><h3>Names of Allah</h3><p>One of the ninety-nine each day, with its meaning and where it appears.</p><p class="tile__ar" lang="ar">ٱلْحَقُّ</p></article>
+      <article class="tile tile--wide"><img src="../assets/screens/widgets.webp" alt="Home-screen widgets" loading="lazy" width="588" height="1280"><div><h3>Before you unlock</h3><p>Widgets for the next prayer, the arc, the tracker, a verse and the Qibla, and on iPhone a Live Activity counting the prayer down.</p></div></article>
+      <article class="tile"><h3>Duas</h3><p>Morning, evening, travel and sleep, from the Qur’an and Sunnah, with their sources.</p></article>
+      <article class="tile"><h3>Free, for everyone</h3><p>Prayer times, the Qur’an, streaks, friends and Tahajjud cost nothing. Premium adds the mat scan, every counter and widget colours.</p></article>
     </div>
   </section>
 
-  <!-- THE STORY: pinned scrollytelling over the 3D stage -->
-  <section class="story" id="story" aria-label="How Layla Pro works">
-    <div class="story__sticky">
-      <div class="story__steps">
-        <article class="step is-active" data-step="0">
-          <p class="eyebrow">Movement I · The day</p>
-          <h2 class="step__title">The day, drawn as <em>the sun actually moves.</em></h2>
-          <p class="step__body">Home opens on one arc from Fajr to Isha. The sun sits where it is right now, the next prayer is lit, and a countdown ticks underneath. Every time is computed on your phone, from where you stand and the method you choose.</p>
-          <dl class="step__specs">
-            <div><dt>Prayers</dt><dd>5 + sunrise</dd></div>
-            <div><dt>Reminder</dt><dd>4 sounds</dd></div>
-            <div><dt>Computed</dt><dd>On device</dd></div>
-          </dl>
-        </article>
-        <article class="step" data-step="1">
-          <p class="eyebrow">Movement II · Prayer Focus</p>
-          <h2 class="step__title">A phone that <em>waits for you to pray.</em></h2>
-          <p class="step__body">When a prayer begins, the apps you chose are held for thirty minutes. Open one and Layla Pro’s prayer screen covers it, with the time left. Calls, and Layla Pro itself, are never held. On iPhone it is a Screen Time shield; on Android it brings the prayer screen back, and you can always step past it.</p>
-          <dl class="step__specs">
-            <div><dt>Window</dt><dd>30 min</dd></div>
-            <div><dt>Held</dt><dd>Your choice</dd></div>
-            <div><dt>Then</dt><dd>Lets go</dd></div>
-          </dl>
-        </article>
-        <article class="step" data-step="2">
-          <p class="eyebrow">Movement III · The year</p>
-          <h2 class="step__title">A year of prayer, <em>in 365 dots.</em></h2>
-          <p class="step__body">Every day is a dot: green for five confirmed, amber for a day still open, rose for a prayer missed. With Premium, you confirm by scanning your prayer mat, so the streak is proof, not a promise. Only a confirmed prayer ever counts.</p>
-          <dl class="step__specs">
-            <div><dt>Days</dt><dd>365</dd></div>
-            <div><dt>Confirm</dt><dd>Mat scan</dd></div>
-            <div><dt>Inferred</dt><dd>Never</dd></div>
-          </dl>
-        </article>
-        <article class="step" data-step="3">
-          <p class="eyebrow">Movement IV · Tahajjud</p>
-          <h2 class="step__title">You are not <em>the only one awake.</em></h2>
-          <p class="step__body">Layla Pro divides the night from Maghrib to Fajr into thirds and lights the last. Tap “I am praying Tahajjud” and a small light appears on a globe of the Earth at night, beside everyone else praying. Each light is a five-kilometre area, never a person, and fades after four hours.</p>
-          <dl class="step__specs">
-            <div><dt>Night</dt><dd>3 thirds</dd></div>
-            <div><dt>Area</dt><dd>~5 km</dd></div>
-            <div><dt>Fades</dt><dd>4 hours</dd></div>
-          </dl>
-        </article>
-        <article class="step" data-step="4">
-          <p class="eyebrow">Movement V · The Qur’an</p>
-          <h2 class="step__title">The whole Qur’an, and <em>a voice that shows you the word.</em></h2>
-          <p class="step__body">The Madinah mushaf, all 604 pages as printed, and an IndoPak edition beside it. Press play and the word being recited lights in gold, on the page and in the reader. Eighteen reciters, over a hundred translations, and every surah ready to download for no signal at all.</p>
-          <dl class="step__specs">
-            <div><dt>Pages</dt><dd>604</dd></div>
-            <div><dt>Reciters</dt><dd>18</dd></div>
-            <div><dt>Scripts</dt><dd>3</dd></div>
-          </dl>
-        </article>
-      </div>
-
-      <nav class="rail" aria-label="Story steps">
-        <button type="button" class="is-active" data-goto="0"><span class="mono">I</span><b>The day</b></button>
-        <button type="button" data-goto="1"><span class="mono">II</span><b>Focus</b></button>
-        <button type="button" data-goto="2"><span class="mono">III</span><b>The year</b></button>
-        <button type="button" data-goto="3"><span class="mono">IV</span><b>Tahajjud</b></button>
-        <button type="button" data-goto="4"><span class="mono">V</span><b>Qur’an</b></button>
-      </nav>
-
-      <p class="readout mono" aria-hidden="true">
-        <span id="readout-label">Sun’s path</span>
-        <span class="readout__bar"><i id="readout-bar"></i></span>
-        <span id="readout-val">000</span>
-      </p>
+  <section class="note" id="note" aria-labelledby="note-title">
+    <img class="note__face" src="../assets/maker.webp" alt="Aden Zia" width="760" height="1280" loading="lazy">
+    <div class="note__body">
+      <h2 id="note-title">A note from the person who made it.</h2>
+      <p>I built Layla Pro because my phone kept winning at prayer time. “After this video” became Asr gone, more often than I want to admit.</p>
+      <p>So I made the app I needed: one that knows when it is time, steps aside when I should pray, and keeps an honest count without turning it into a competition. Every screen, every line of code and every word on this page is mine. If something is wrong, you will be talking to the person who fixes it.</p>
+      <p>Seven percent of every subscription is set aside for those in need, and I will show where it goes, with receipts.</p>
+      <p class="note__sign">Aden Zia, Malaysia</p>
     </div>
   </section>
 
-  <!-- INSIDE THE APP: the work grid -->
-  <section class="inside" id="inside" aria-labelledby="inside-title">
-    <div class="inside__head">
-      <p class="eyebrow" data-reveal>II · Inside the app</p>
-      <h2 class="section-title" id="inside-title" data-split>Every screen, <em>made by hand.</em></h2>
-      <div class="inside__aside" data-reveal>
-        <p>Four tabs, and nothing on them that is there for decoration. Prayer, the Qur’an, the night, and the quiet work between the prayers.</p>
-        <div class="filters" role="group" aria-label="Filter screens">
-          <button type="button" class="is-active" data-filter="all">All <span>08</span></button>
-          <button type="button" data-filter="prayer">Prayer <span>02</span></button>
-          <button type="button" data-filter="quran">Qur’an <span>02</span></button>
-          <button type="button" data-filter="night">Night <span>02</span></button>
-          <button type="button" data-filter="soul">Soul <span>02</span></button>
-        </div>
-      </div>
-    </div>
-
-    <ul class="grid">
-      <li class="card card--5" data-cat="prayer" data-reveal>
-        <div class="card__media"><img src="../assets/screens/home.webp" alt="The Home screen: the sun arc from Fajr to Isha with the next prayer lit and a countdown" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">01</span><h3 class="card__title">The sun arc</h3><span class="card__cat mono">Prayer</span><p class="card__client">Home · times computed on the phone</p></div>
-      </li>
-      <li class="card card--7 card--drop" data-cat="quran" data-reveal>
-        <div class="card__media"><img src="../assets/screens/mushaf.webp" alt="The Madinah mushaf page with the recited word lit in gold" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">02</span><h3 class="card__title">The printed page</h3><span class="card__cat mono">Qur’an</span><p class="card__client">604 Madinah pages · word-by-word gold</p></div>
-      </li>
-      <li class="card card--7" data-cat="night" data-reveal>
-        <div class="card__media"><img src="../assets/screens/tahajjud.webp" alt="The Tahajjud screen: the night divided into thirds with the last third lit" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">03</span><h3 class="card__title">The last third</h3><span class="card__cat mono">Night</span><p class="card__client">Tahajjud · Maghrib to Fajr, drawn</p></div>
-      </li>
-      <li class="card card--5 card--drop" data-cat="soul" data-reveal>
-        <div class="card__media"><img src="../assets/screens/tasbih.webp" alt="The tasbih counter with a ring of beads" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">04</span><h3 class="card__title">Seven ways to count</h3><span class="card__cat mono">Soul</span><p class="card__client">Tasbih · gold, jade, pearl and more</p></div>
-      </li>
-      <li class="card card--5" data-cat="quran" data-reveal>
-        <div class="card__media"><img src="../assets/screens/reader.webp" alt="The Qur'an reader with Arabic, transliteration and translations" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">05</span><h3 class="card__title">Read &amp; listen</h3><span class="card__cat mono">Qur’an</span><p class="card__client">Reader · 18 reciters, 100+ translations</p></div>
-      </li>
-      <li class="card card--7 card--drop" data-cat="night" data-reveal>
-        <div class="card__media"><img src="../assets/screens/friends.webp" alt="Friends: each friend with five dots, one for each prayer of their day" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">06</span><h3 class="card__title">Five dots a friend</h3><span class="card__cat mono">Night</span><p class="card__client">Friends · no leaderboard, on purpose</p></div>
-      </li>
-      <li class="card card--7" data-cat="soul" data-reveal>
-        <div class="card__media"><img src="../assets/screens/mood.webp" alt="Mood: pick how you feel and turn a deck of verses chosen for it" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">07</span><h3 class="card__title">A verse for how you feel</h3><span class="card__cat mono">Soul</span><p class="card__client">Mood · recited by Mishary Alafasy</p></div>
-      </li>
-      <li class="card card--5 card--drop" data-cat="prayer" data-reveal>
-        <div class="card__media"><img src="../assets/screens/widgets.webp" alt="Home screen widgets showing the next prayer and the day's times" loading="lazy" width="588" height="1280"></div>
-        <div class="card__meta"><span class="card__no mono">08</span><h3 class="card__title">Before you unlock</h3><span class="card__cat mono">Prayer</span><p class="card__client">Widgets · nine colour sets on iPhone</p></div>
-      </li>
-    </ul>
-  </section>
-
-  <!-- MAKER -->
-  <section class="maker" id="maker" aria-labelledby="maker-title">
-    <figure class="maker__shot">
-      <img src="../assets/maker.webp" alt="Aden Zia, who builds Layla Pro" width="760" height="1280" loading="lazy">
-      <figcaption class="mono">Aden Zia · Malaysia · the whole team</figcaption>
-    </figure>
-
-    <div class="maker__body">
-      <p class="eyebrow" data-reveal>III · Who builds it</p>
-      <h2 class="section-title" id="maker-title" data-split>One person, <em>every screen.</em></h2>
-      <div class="maker__copy" data-reveal>
-        <p>Layla Pro is designed, written and maintained by one developer. The prayer times, the Qur’an with its word-by-word timings, the prayer-mat scan, the globe, and every pixel of this page come from the same pair of hands.</p>
-        <p>Nothing in it was decided in a meeting. If something is wrong, there is no support queue to disappear into: the person who reads your message is the person who writes the fix.</p>
-      </div>
-
-      <div class="spec" data-reveal>
-        <div class="spec__head mono"><span>Specification</span><span>Layla Pro · 1.0</span></div>
-        <dl>
-          <div><dt>Platforms</dt><dd>iPhone (iOS 17+) · Android 8+</dd></div>
-          <div><dt>Prayer times</dt><dd>Computed on the phone, your method</dd></div>
-          <div><dt>Qur’an</dt><dd>604-page Madinah mushaf · IndoPak · Tajweed</dd></div>
-          <div><dt>Recitation</dt><dd>18 reciters, offline downloads</dd></div>
-          <div><dt>Free, always</dt><dd>Times, Qur’an, streaks, Tahajjud</dd></div>
-          <div><dt>Premium</dt><dd>Mat scan, every counter, widget colours</dd></div>
-          <div><dt>Charity</dt><dd>7% of every subscription</dd></div>
-        </dl>
-      </div>
-
-      <div class="privacy" data-reveal>
-        <h3 class="mono privacy__title">What leaves your phone</h3>
-        <ul>
-          <li><b>Prayer times</b><span>Computed on your phone. Your location is used there and nowhere else.</span></li>
-          <li><b>The globe</b><span>A rough five-kilometre area, never a point, gone after four hours.</span></li>
-          <li><b>The mat scan</b><span>Judged on the phone first. A photo it cannot settle is sent, shrunk, for a second check and not kept.</span></li>
-          <li><b>Friends</b><span>Five dots, a streak and this year’s counts. “Quiet for now” hides the numbers.</span></li>
-          <li><b>The waitlist</b><span>Your email and phone type, used once on launch day. Never shared.</span></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- GET IT -->
-  <section class="get" id="get" aria-labelledby="get-title">
-    <div class="get__inner">
-      <p class="eyebrow" data-reveal>IV · Get it</p>
-      <h2 class="section-title get__title" id="get-title" data-split>Keep your prayers <em>with you.</em></h2>
-      <p class="get__lead" data-reveal>Layla Pro is in review on the App Store and Google Play. Leave your email and I will write once, the day it lands on your phone.</p>
-
-      <div class="get__row" data-reveal>
-        <a class="dl" href="#get" data-store>
-          <span class="mono dl__no">01</span>
-          <b>App Store</b>
-          <small>iPhone, iOS 17 and later. Widgets, the Live Activity and the Screen Time shield.</small>
-          <span class="dl__go mono">Join the waitlist <span aria-hidden="true">→</span></span>
-        </a>
-        <a class="dl" href="#get" data-play>
-          <span class="mono dl__no">02</span>
-          <b>Google Play</b>
-          <small>Android 8 and later. Prayer Focus, home-screen widgets and offline Qur’an.</small>
-          <span class="dl__go mono">Join the waitlist <span aria-hidden="true">→</span></span>
-        </a>
-      </div>
-
-      <div class="plans" data-reveal>
-        <div class="plan"><span class="mono">Free</span><b>Everything that matters</b><small>Times, Qur’an, streaks, Tahajjud, friends</small></div>
-        <div class="plan"><span class="mono">Monthly</span><b>Premium</b><small>Billed every month, cancel any time</small></div>
-        <div class="plan"><span class="mono">Yearly</span><b>Premium</b><small>Two months free</small></div>
-        <div class="plan plan--charity"><span class="mono">7%</span><b>To charity</b><small>Of every subscription, shown with receipts</small></div>
-      </div>
-      <p class="mono get__fine" data-reveal>Prices are shown in the app, in your currency. One email on launch day, nothing else.</p>
-    </div>
+  <section class="join" id="join" aria-labelledby="join-title">
+    <h2 id="join-title">Be there on the first day.</h2>
+    <p class="join__lead">Layla Pro is in review on the App Store and Google Play. Leave your email and I will write once, the day it reaches your phone.</p>
+    <form class="joinform" id="joinform" novalidate>
+      <fieldset class="joinform__os">
+        <legend class="sr">Your phone</legend>
+        <label><input type="radio" name="platform" value="ios" checked><span>iPhone</span></label>
+        <label><input type="radio" name="platform" value="android"><span>Android</span></label>
+      </fieldset>
+      <label class="joinform__field"><span class="sr">Email</span><input type="email" name="email" placeholder="you@gmail.com" autocomplete="email" inputmode="email" required maxlength="254"></label>
+      <label class="sr" aria-hidden="true">Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label>
+      <button class="cta" type="submit">Join the waitlist</button>
+      <p class="joinform__msg" id="joinmsg" role="status" aria-live="polite"></p>
+    </form>
+    <p class="join__fine">One email, on launch day, for the phone you pick. Your address is never shared. Prices are shown in the app, in your currency: monthly, or yearly with two months free.</p>
   </section>
 </main>
 
-<footer class="footer">
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee__track">
-      <span>Fajr <i>·</i> Dhuhr <i>·</i> Asr <i>·</i> Maghrib <i>·</i> Isha <i>·</i> <em>Keep your prayers with you</em> <i>·</i> <bdi lang="ar">اجعل صلاتك معك</bdi> <i>·</i></span>
-      <span>Fajr <i>·</i> Dhuhr <i>·</i> Asr <i>·</i> Maghrib <i>·</i> Isha <i>·</i> <em>Keep your prayers with you</em> <i>·</i> <bdi lang="ar">اجعل صلاتك معك</bdi> <i>·</i></span>
-    </div>
-  </div>
-  <div class="footer__bar mono">
-    <span>© 2026 Layla Pro</span>
-    <span>Made in Malaysia · Earth imagery NASA</span>
-    <a class="link" href="../">Classic site</a>
-    <a class="link" href="https://github.com/adenzia04-ui/layla-pro/issues" rel="noopener" id="contact-link">Contact</a>
-    <a class="link" href="#top">Back to top ↑</a>
-  </div>
+<footer class="foot">
+  <p class="foot__dua" lang="ar">رَبَّنَا تَقَبَّلْ مِنَّآ</p>
+  <p class="foot__tr">“Our Lord, accept this from us.” Al-Baqarah 2:127</p>
+  <nav class="foot__links"><a href="../">Classic site</a><a href="../#privacy">Privacy</a><a href="https://github.com/adenzia04-ui/layla-pro/issues" rel="noopener">Contact</a></nav>
+  <p class="foot__c">© 2026 Layla Pro · Made in Malaysia · Earth imagery NASA</p>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="../assets/waitlist.js?v=2"></script>
-<script src="../assets/store-link.js?v=2"></script>
-<script type="module" src="main.js?v=3"></script>
+<script type="module" src="main.js?v=9"></script>
 </body>
 </html>

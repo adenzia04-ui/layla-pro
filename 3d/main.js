@@ -1,12 +1,11 @@
-/* Layla Pro — the 3D site.
+/* Layla Pro — "One day".
  *
- * One three.js scene sits fixed behind the page. Scrolling moves a single
- * number, `f`, from 0 (the hero) through 1..6 (the five movements of the
- * story) to 7 (the rest of the page), and everything on the stage is a
- * function of it: the camera, where each object stands, how visible it is,
- * and the small animation inside each movement — the sun travelling its
- * arc, the apps being held, the year assembling, the lights of the night,
- * the mushaf opening with its words lighting one by one.
+ * Scrolling the page is living through one day. A single number `d` says
+ * where in it you are: -1 is the hour before Fajr (the hero), 0..5 are the
+ * six chapters (Fajr, Dhuhr, Asr, Maghrib, Isha, the last third of the
+ * night), and 6 is the rest of the page. The sky's colours, the sun on the
+ * horizon, the stars, the phone's screen and finally the whole Earth with
+ * its Tahajjud lights are all read from `d`.
  */
 import * as THREE from 'three';
 
@@ -17,742 +16,318 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (t) => t * t * (3 - 2 * t);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const ASSETS = '../assets/';
+const cfg = window.LAYLA || {};
 
-document.body.classList.add('is-loading');
+/* ───────────────────────────────── where in the day are we ── */
 
-/* ─────────────────────────────── small page behaviours ── */
+const chapters = $$('.ch');
+const dayline = $('#dayline');
+function dayPos() {
+  const vh = innerHeight, mid = vh * .5;
+  const first = chapters[0].getBoundingClientRect().top;
+  if (mid < first) return -1 + clamp(scrollY / Math.max(1, scrollY + first - mid));
+  for (let i = 0; i < chapters.length; i++) {
+    const r = chapters[i].getBoundingClientRect();
+    if (mid < r.bottom) return i + clamp((mid - r.top) / r.height);
+  }
+  return 6 + clamp((mid - dayline.getBoundingClientRect().bottom) / vh);
+}
 
-// Words of each [data-split] heading rise in one after another.
-$$('[data-split]').forEach((el) => {
-  let i = 0;
-  const walk = (node) => {
-    [...node.childNodes].forEach((n) => {
-      if (n.nodeType === 3) {
-        const frag = document.createDocumentFragment();
-        n.textContent.split(/(\s+)/).forEach((part) => {
-          if (!part) return;
-          if (/^\s+$/.test(part)) { frag.append(part); return; }
-          const w = document.createElement('span'); w.className = 'w';
-          const s = document.createElement('span'); s.textContent = part; s.style.setProperty('--i', i++);
-          w.append(s); frag.append(w);
-        });
-        n.replaceWith(frag);
-      } else if (n.nodeType === 1) walk(n);
-    });
+// The sky at the middle of each chapter.
+const SKY = [
+  { d: -1,  top: '#070b1f', bot: '#2a2852', sun: -32, night: 1 },
+  { d: .5,  top: '#1b2452', bot: '#e3907c', sun: -4,  night: .55 },
+  { d: 1.5, top: '#4a8bd0', bot: '#d6ebf7', sun: 72,  night: 0 },
+  { d: 2.5, top: '#6a98c4', bot: '#f4d39c', sun: 30,  night: 0 },
+  { d: 3.5, top: '#2c1c4b', bot: '#ff8b5e', sun: -1,  night: .3 },
+  { d: 4.5, top: '#0b1030', bot: '#22305f', sun: -18, night: .9 },
+  { d: 5.5, top: '#03050d', bot: '#0a1430', sun: -40, night: 1 },
+  { d: 7,   top: '#05070f', bot: '#0d1430', sun: -40, night: 1 },
+];
+const cA = new THREE.Color(), cB = new THREE.Color();
+function skyAt(d) {
+  let i = 0; while (i < SKY.length - 2 && d > SKY[i + 1].d) i++;
+  const a = SKY[i], b = SKY[i + 1], t = smooth(clamp((d - a.d) / (b.d - a.d)));
+  return {
+    top: '#' + cA.set(a.top).lerp(cB.set(b.top), t).getHexString(),
+    bot: '#' + cA.set(a.bot).lerp(cB.set(b.bot), t).getHexString(),
+    sun: lerp(a.sun, b.sun, t), night: lerp(a.night, b.night, t),
   };
-  walk(el);
-});
+}
 
-const io = new IntersectionObserver((entries) => {
-  entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
-}, { rootMargin: '0px 0px -12% 0px' });
-$$('[data-reveal], [data-split]').forEach((el) => io.observe(el));
+const sky = $('.sky');
+const navDots = $$('.day a');
+let lastChapter = -2, lastTone = '';
+function pageState(d) {
+  const s = skyAt(d);
+  sky.style.setProperty('--sky-top', s.top);
+  sky.style.setProperty('--sky-bot', s.bot);
+  const tone = d > 1.05 && d < 2.95 ? 'light' : 'dark';
+  if (tone !== lastTone) { document.body.dataset.tone = tone; lastTone = tone; document.querySelector('meta[name="theme-color"]').content = s.top; }
+  const ch = d < 0 ? -1 : Math.min(5, Math.floor(d));
+  if (ch !== lastChapter) {
+    lastChapter = ch;
+    chapters.forEach((c, i) => c.classList.toggle('is-here', i === ch));
+    navDots.forEach((a, i) => { a.classList.toggle('is-now', i === ch); a.classList.toggle('is-done', ch > i); });
+  }
+  return s;
+}
 
-// The clock in the nav: local time, named by the visitor's own city.
-(function clock() {
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  const place = tz.split('/').pop().replace(/_/g, ' ');
-  if (place) $('#clock-place').textContent = place.length > 14 ? 'Local' : place;
-  const fmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const tick = () => { $('#clock').textContent = fmt.format(new Date()); };
-  tick(); setInterval(tick, 1000);
-})();
+/* ─────────────────────────────────────── the waitlist form ── */
 
-// Menu (narrow screens).
-(function menu() {
-  const btn = $('.nav__menu'), m = $('#menu');
-  const set = (open) => { m.hidden = !open; btn.setAttribute('aria-expanded', open); btn.textContent = open ? 'Close' : 'Menu'; };
-  btn.addEventListener('click', () => set(m.hidden));
-  $$('a', m).forEach((a) => a.addEventListener('click', () => set(false)));
-})();
-
-// Filters on the "Inside" grid.
-$$('.filters button').forEach((b) => b.addEventListener('click', () => {
-  $$('.filters button').forEach((x) => x.classList.toggle('is-active', x === b));
-  const f = b.dataset.filter;
-  $$('.grid .card').forEach((c) => c.classList.toggle('is-hidden', f !== 'all' && c.dataset.cat !== f));
-}));
-
-// Cursor: a ring that follows, and grows with a word over things you can act on.
-(function cursor() {
-  const c = $('.cursor'); if (!c || matchMedia('(pointer: coarse)').matches) return;
-  const label = $('.cursor__label', c);
-  let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
-  addEventListener('pointermove', (e) => { x = e.clientX; y = e.clientY; });
-  document.addEventListener('pointerover', (e) => {
-    const t = e.target.closest('a, button, .card__media, label');
-    c.classList.toggle('is-hover', !!t);
-    label.textContent = !t ? '' : t.matches('.card__media') ? 'View'
-      : t.matches('[data-store="soon"], [data-play="soon"]') ? 'Join' : '';
+(function joinForm() {
+  const form = $('#joinform'), msg = $('#joinmsg');
+  const say = (t, bad) => { msg.textContent = t; msg.classList.toggle('bad', !!bad); };
+  // Buttons that name a platform choose it in the form, or go to the store once it is live.
+  $$('[data-platform]').forEach((b) => {
+    const url = b.dataset.platform === 'ios' ? cfg.STORE_URL : cfg.PLAY_URL;
+    if (url) { b.href = url; b.rel = 'noopener'; b.textContent = b.dataset.platform === 'ios' ? 'Download on the App Store' : 'Get it on Google Play'; return; }
+    b.addEventListener('click', () => { const r = form.querySelector(`input[value="${b.dataset.platform}"]`); if (r) r.checked = true; });
   });
-  (function loop() { cx += (x - cx) * .2; cy += (y - cy) * .2; c.style.transform = `translate(${cx}px, ${cy}px)`; requestAnimationFrame(loop); })();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = form.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say('That email does not look right. Check it and try again.', true); form.email.focus(); return; }
+    const btn = form.querySelector('button'); btn.disabled = true; say('Adding you…');
+    try {
+      const res = await fetch(cfg.WAITLIST_URL.replace(/\/+$/, '') + '/join', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, platform: form.platform.value, company: form.company.value }),
+      });
+      if (res.ok) {
+        const store = form.platform.value === 'ios' ? 'the App Store' : 'Google Play';
+        form.classList.add('is-done');
+        say(`You are on the list. I will email ${email} the day Layla Pro is on ${store}.`);
+        form.email.value = '';
+      } else say(res.status === 400 ? 'That email does not look right. Check it and try again.' : 'Something went wrong on my side. Please try again in a minute.', true);
+    } catch { say('Could not reach the waitlist. Check your connection and try again.', true); }
+    btn.disabled = false;
+  });
 })();
 
-// Nav: background once scrolled, hides on the way down, active section lit.
-const nav = $('#nav');
-let lastY = 0;
-const navLinks = $$('[data-nav]');
-const sections = ['story', 'inside', 'maker', 'get'].map((id) => document.getElementById(id));
-function updateNav(y) {
-  nav.classList.toggle('is-scrolled', y > 40);
-  nav.classList.toggle('is-hidden', y > lastY && y > innerHeight * 1.2 && !$('#menu:not([hidden])'));
-  lastY = y;
-  let active = null;
-  sections.forEach((s) => { const r = s.getBoundingClientRect(); if (r.top < innerHeight * .45 && r.bottom > innerHeight * .45) active = s.id; });
-  navLinks.forEach((a) => a.classList.toggle('is-active', a.dataset.nav === active));
-}
-
-/* ─────────────────────────────────────── smooth scroll ── */
-
-let lenis = null;
-if (!reduce && window.Lenis) {
-  lenis = new window.Lenis({ duration: 1.15, smoothWheel: true });
-  $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
-    const id = a.getAttribute('href');
-    if (id.length < 2 || e.defaultPrevented) return;
-    const t = document.querySelector(id); if (!t) return;
-    e.preventDefault(); lenis.scrollTo(t, { offset: id === '#top' ? 0 : -10 });
-  }));
-}
-const scrollTo = (y) => (lenis ? lenis.scrollTo(y) : window.scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }));
-
-/* ───────────────────────────────────── scroll → number ── */
-
-const story = $('#story');
-const steps = $$('.step');
-const railBtns = $$('.rail button');
-let storyTop = 0, storyLen = 1;
-function measure() {
-  const r = story.getBoundingClientRect();
-  storyTop = r.top + scrollY;
-  storyLen = Math.max(1, story.offsetHeight - innerHeight);
-}
-measure();
-addEventListener('resize', measure);
-railBtns.forEach((b) => b.addEventListener('click', () => {
-  const i = +b.dataset.goto;
-  scrollTo(storyTop + storyLen * ((i + 0.5) / 5));
-}));
-
-/** 0 at the top of the page, 1..6 across the story, 7 just after it. */
-function phase() {
-  measure(); // the hero's height settles as fonts arrive, so measure every time
-  const y = scrollY;
-  if (y < storyTop) return clamp(y / Math.max(1, storyTop));
-  const s = (y - storyTop) / storyLen;
-  if (s <= 1) return 1 + s * 5;
-  return 6 + clamp((y - storyTop - storyLen) / innerHeight);
-}
-
-let activeStep = 0;
-function setStep(i) {
-  if (i === activeStep) return;
-  activeStep = i;
-  steps.forEach((s, k) => s.classList.toggle('is-active', k === i));
-  railBtns.forEach((b, k) => b.classList.toggle('is-active', k === i));
-}
-
-/* ─────────────────────────────────────────── the scene ── */
+/* ─────────────────────────────────────────────── the scene ── */
 
 const canvas = $('#scene');
-let renderer;
-try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-} catch (e) {
-  $('.stage').classList.add('no-gl');
-}
+let renderer = null;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch { /* the sky gradient alone still tells the day */ }
 
-const loaderDeg = $('#loader-deg'), loaderBar = $('#loader-bar');
-let loadShown = 0, loadTarget = 0, loadDone = false;
-const loadStart = performance.now();
-function finishLoading() {
-  loadDone = true;
-}
-(function loaderLoop() {
-  // The sun sinks from the horizon to −18°, the moment of Fajr.
-  const minTime = clamp((performance.now() - loadStart) / 1700);
-  const goal = Math.min(loadTarget, minTime);
-  loadShown += (goal - loadShown) * .12;
-  loaderDeg.textContent = (-18 * loadShown).toFixed(1).replace('-0.0', '0.0');
-  loaderBar.style.transform = `scaleX(${loadShown})`;
-  if (loadDone && loadShown > .995) {
-    loaderDeg.textContent = '−18.0';
-    $('#loader').classList.add('is-done');
-    document.body.classList.remove('is-loading');
-    document.documentElement.classList.add('is-ready');
-    document.body.classList.add('is-ready');
-    return;
-  }
-  requestAnimationFrame(loaderLoop);
-})();
+if (!renderer) {
+  const loop = () => { pageState(dayPos()); requestAnimationFrame(loop); }; loop();
+} else build();
 
-if (!renderer) { loadTarget = 1; finishLoading(); }
-else buildScene();
-
-function buildScene() {
+function build() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setClearColor(0x0a0806, 1);
+  renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x0a0806, 6, 14);
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
+  const camera = new THREE.PerspectiveCamera(36, 1, .1, 200);
+  const tl = new THREE.TextureLoader();
+  const tex = (n) => { const t = tl.load(ASSETS + n); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
 
-  const manager = new THREE.LoadingManager();
-  manager.onProgress = (_, done, total) => { loadTarget = done / total; };
-  manager.onLoad = () => { loadTarget = 1; finishLoading(); };
-  const tl = new THREE.TextureLoader(manager);
-  const tex = (name) => { const t = tl.load(ASSETS + name); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+  scene.add(new THREE.AmbientLight(0xffffff, .55));
+  const sunLight = new THREE.DirectionalLight(0xffffff, 1.8); scene.add(sunLight);
 
-  /* light, for the phone and the book */
-  scene.add(new THREE.AmbientLight(0xfff1e0, 0.35));
-  const key = new THREE.DirectionalLight(0xffe6c4, 2.2); key.position.set(-3, 4, 5); scene.add(key);
-  const rim = new THREE.DirectionalLight(0x9db8ff, 1.2); rim.position.set(4, -1, -3); scene.add(rim);
-
-  /* ── the Earth at night ── */
-  const globe = new THREE.Group(); scene.add(globe);
-  const earth = new THREE.Group(); globe.add(earth);
-  const earthMat = new THREE.ShaderMaterial({
-    uniforms: {
-      dayMap: { value: tex('earth-day.webp') },
-      nightMap: { value: tex('earth-night.webp') },
-      sunDir: { value: new THREE.Vector3(1, 0.2, 0.3).normalize() },
-      uOpacity: { value: 1 },
-    },
-    vertexShader: `
-      varying vec2 vUv; varying vec3 vN; varying vec3 vView;
-      void main(){
-        vUv = uv;
-        vec4 wp = modelMatrix * vec4(position,1.0);
-        vN = normalize(mat3(modelMatrix) * normal);
-        vView = normalize(cameraPosition - wp.xyz);
-        gl_Position = projectionMatrix * viewMatrix * wp;
-      }`,
-    fragmentShader: `
-      uniform sampler2D dayMap, nightMap; uniform vec3 sunDir; uniform float uOpacity;
-      varying vec2 vUv; varying vec3 vN; varying vec3 vView;
-      void main(){
-        float d = dot(normalize(vN), sunDir);
-        float day = smoothstep(-0.08, 0.32, d);
-        vec3 dayC = texture2D(dayMap, vUv).rgb * vec3(0.78, 0.74, 0.70) * 0.55;
-        vec3 nightC = texture2D(nightMap, vUv).rgb;
-        nightC = pow(nightC, vec3(1.25)) * vec3(1.35, 1.12, 0.82) * 1.5;
-        vec3 c = mix(nightC, dayC, day);
-        float fres = pow(1.0 - max(dot(normalize(vN), vView), 0.0), 3.0);
-        c += vec3(0.55, 0.62, 0.78) * fres * 0.16;
-        gl_FragColor = vec4(c, uOpacity);
-        #include <colorspace_fragment>
-      }`,
-    transparent: true,
-  });
-  const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), earthMat);
-  earth.add(earthMesh);
-
-  const atmo = new THREE.Mesh(
-    new THREE.SphereGeometry(1.14, 64, 48),
-    new THREE.ShaderMaterial({
-      uniforms: { uOpacity: { value: 1 } },
-      vertexShader: `varying vec3 vN; varying vec3 vV;
-        void main(){ vec4 wp = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition-wp.xyz); gl_Position = projectionMatrix*viewMatrix*wp; }`,
-      fragmentShader: `uniform float uOpacity; varying vec3 vN; varying vec3 vV;
-        void main(){ float i = clamp(pow(0.6 - dot(vN, vV), 4.0), 0., 1.); gl_FragColor = vec4(vec3(0.55,0.64,0.86) * i * .75, i * .7 * uOpacity); }`,
-      side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
-    }),
-  );
-  globe.add(atmo);
-
-  // Lights of the people praying Tahajjud — rough areas, never points.
-  const PLACES = [
-    [21.4, 39.8], [24.5, 39.6], [31.8, 35.2], [30.0, 31.2], [33.5, 36.3], [33.3, 44.4], [35.7, 51.4], [41.0, 29.0], [39.9, 32.9],
-    [24.7, 46.7], [25.3, 51.5], [25.2, 55.3], [23.6, 58.4], [15.4, 44.2], [12.8, 45.0], [2.0, 45.3], [9.0, 38.7], [15.6, 32.5],
-    [36.8, 10.2], [36.7, 3.1], [33.6, -7.6], [34.0, -6.8], [14.7, -17.4], [12.6, -8.0], [13.5, 2.1], [9.1, 7.4], [12.0, 8.5],
-    [6.5, 3.4], [-6.8, 39.3], [-4.0, 39.7], [24.9, 67.0], [31.5, 74.3], [33.7, 73.0], [28.6, 77.2], [19.1, 72.9], [17.4, 78.5],
-    [23.8, 90.4], [22.3, 91.8], [34.5, 69.2], [41.3, 69.3], [43.2, 76.9], [3.1, 101.7], [1.5, 103.8], [5.4, 100.3], [-6.2, 106.8],
-    [-7.3, 112.7], [-6.9, 107.6], [-5.1, 119.4], [3.6, 98.7], [-0.9, 100.4], [14.6, 121.0], [7.1, 125.6], [39.9, 116.4], [43.8, 87.6],
-    [51.5, -0.1], [52.5, -1.9], [53.5, -2.2], [48.9, 2.4], [52.5, 13.4], [50.9, 6.9], [52.4, 4.9], [59.3, 18.1], [40.7, -74.0],
-    [41.9, -87.6], [42.3, -83.0], [43.7, -79.4], [45.5, -73.6], [34.0, -118.2], [29.8, -95.4], [-33.9, 151.2], [-37.8, 145.0],
-    [-26.2, 28.0], [-33.9, 18.4], [55.8, 37.6], [55.8, 49.1], [40.4, 49.9], [37.9, 58.4], [38.6, 68.8], [29.4, 47.9], [26.2, 50.6],
-  ];
-  const N_LIGHTS = 420;
-  const lp = new Float32Array(N_LIGHTS * 3), lr = new Float32Array(N_LIGHTS), ls = new Float32Array(N_LIGHTS);
-  const rnd = (() => { let s = 7; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
-  for (let i = 0; i < N_LIGHTS; i++) {
-    const [la, lo] = PLACES[i % PLACES.length];
-    const lat = THREE.MathUtils.degToRad(la + (rnd() - .5) * 5), lon = THREE.MathUtils.degToRad(lo + (rnd() - .5) * 6);
-    const r = 1.006;
-    // Same mapping as SphereGeometry's UVs, so the lights sit on the right land.
-    lp[i * 3] = r * Math.cos(lat) * Math.cos(lon);
-    lp[i * 3 + 1] = r * Math.sin(lat);
-    lp[i * 3 + 2] = -r * Math.cos(lat) * Math.sin(lon);
-    lr[i] = rnd(); ls[i] = .6 + rnd() * .9;
+  /* ── stars, and the moon ── */
+  const N_STARS = 1400, sp = new Float32Array(N_STARS * 3), ss = new Float32Array(N_STARS);
+  const rnd = (() => { let s = 11; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
+  for (let i = 0; i < N_STARS; i++) {
+    const th = rnd() * Math.PI * 2, ph = Math.acos(rnd() * .95), r = 60;
+    sp[i * 3] = Math.sin(ph) * Math.cos(th) * r; sp[i * 3 + 1] = Math.cos(ph) * r - 6; sp[i * 3 + 2] = -Math.abs(Math.sin(ph) * Math.sin(th) * r) - 10;
+    ss[i] = rnd();
   }
-  const lightGeo = new THREE.BufferGeometry();
-  lightGeo.setAttribute('position', new THREE.BufferAttribute(lp, 3));
-  lightGeo.setAttribute('aRand', new THREE.BufferAttribute(lr, 1));
-  lightGeo.setAttribute('aSize', new THREE.BufferAttribute(ls, 1));
-  const lightMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uBloom: { value: .25 }, uOpacity: { value: 1 }, uScale: { value: 1 } },
-    vertexShader: `
-      attribute float aRand; attribute float aSize; uniform float uTime, uBloom, uScale;
-      varying float vA;
-      void main(){
-        vec4 mv = modelViewMatrix * vec4(position,1.);
-        vec3 nrm = normalize(mat3(modelViewMatrix) * position);
-        float facing = smoothstep(-0.05, 0.25, dot(nrm, normalize(-mv.xyz)));
-        float on = smoothstep(aRand - .08, aRand, uBloom);
-        float pulse = .65 + .35 * sin(uTime * (1.2 + aRand * 1.6) + aRand * 40.);
-        vA = on * facing * pulse;
-        gl_PointSize = aSize * uScale * (12. + 22. * on) / -mv.z;
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: `uniform float uOpacity; varying float vA;
-      void main(){ float d = length(gl_PointCoord - .5); float a = smoothstep(.5, 0., d); a = a*a;
-        gl_FragColor = vec4(mix(vec3(.43,.71,1.), vec3(.86,.94,1.), a*a), a * vA * uOpacity); }`,
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  starGeo.setAttribute('aR', new THREE.BufferAttribute(ss, 1));
+  const starMat = new THREE.ShaderMaterial({
+    uniforms: { uNight: { value: 1 }, uTime: { value: 0 }, uPx: { value: 1 } },
+    vertexShader: `attribute float aR; uniform float uTime, uPx; varying float vA;
+      void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vA = .35 + .65*aR*(.75 + .25*sin(uTime*(.6+aR*2.)+aR*50.));
+        gl_PointSize = (1. + aR*2.2) * uPx; gl_Position = projectionMatrix*mv; }`,
+    fragmentShader: `uniform float uNight; varying float vA;
+      void main(){ float d = length(gl_PointCoord-.5); float a = smoothstep(.5,.0,d); gl_FragColor = vec4(1.,.97,.92, a*vA*uNight); }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
-  const lights = new THREE.Points(lightGeo, lightMat);
-  earth.add(lights);
+  scene.add(new THREE.Points(starGeo, starMat));
 
-  /* ── the sun's path and the five prayers on it ── */
-  const arc = new THREE.Group(); globe.add(arc);
-  arc.rotation.set(-0.42, 0, 0.18);
-  const R = 1.62;
-  const arcPts = [];
-  for (let i = 0; i <= 256; i++) { const a = (i / 256) * Math.PI * 2; arcPts.push(new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R)); }
-  const ringMat = new THREE.LineBasicMaterial({ color: 0xf4eee4, transparent: true, opacity: .22 });
-  arc.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(arcPts), ringMat));
-  // ticks every 15° — a dial
-  const tickPts = [];
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * Math.PI * 2, r1 = R - 0.025, r2 = R + (i % 6 === 0 ? .07 : .035);
-    tickPts.push(new THREE.Vector3(Math.cos(a) * r1, 0, Math.sin(a) * r1), new THREE.Vector3(Math.cos(a) * r2, 0, Math.sin(a) * r2));
-  }
-  const tickMat = new THREE.LineBasicMaterial({ color: 0xf4eee4, transparent: true, opacity: .3 });
-  arc.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(tickPts), tickMat));
-  // The day's path, Fajr to Isha, brighter than the rest of the ring.
-  const A0 = Math.PI * 1.05, A1 = -Math.PI * 0.05; // sweep over the front of the globe
-  const dayPts = [];
-  for (let i = 0; i <= 128; i++) { const a = lerp(A0, A1, i / 128); dayPts.push(new THREE.Vector3(Math.cos(a) * R, 0, Math.sin(a) * R)); }
-  const dayGeo = new THREE.BufferGeometry().setFromPoints(dayPts);
-  const dayMat = new THREE.LineBasicMaterial({ color: 0xf0d9a8, transparent: true, opacity: .9 });
-  const dayLine = new THREE.Line(dayGeo, dayMat); arc.add(dayLine);
+  const glow = (inner, outer) => {
+    const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gr.addColorStop(0, inner); gr.addColorStop(.16, inner); gr.addColorStop(.3, outer); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  };
+  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow('rgba(255,250,236,1)', 'rgba(255,190,120,.35)'), transparent: true, depthWrite: false }));
+  sun.scale.setScalar(3.2); scene.add(sun);
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow('rgba(246,242,232,1)', 'rgba(170,190,255,.18)'), transparent: true, depthWrite: false }));
+  moon.scale.setScalar(1.4); scene.add(moon);
 
-  const PRAYERS = [
-    { name: 'Fajr', time: '5:52', t: 0 }, { name: 'Sunrise', time: '7:04', t: .12 }, { name: 'Dhuhr', time: '13:09', t: .45 },
-    { name: 'Asr', time: '16:23', t: .66 }, { name: 'Maghrib', time: '19:12', t: .86 }, { name: 'Isha', time: '20:22', t: 1 },
-  ];
-  const markerGeo = new THREE.SphereGeometry(.022, 16, 12);
-  const markers = PRAYERS.map((p) => {
-    const a = lerp(A0, A1, p.t);
-    const m = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: 0xf4eee4, transparent: true }));
-    m.position.set(Math.cos(a) * R, 0, Math.sin(a) * R); arc.add(m); return m;
+  /* ── the Earth: first a horizon under your feet, at the end a globe ── */
+  const earth = new THREE.Group(); scene.add(earth);
+  const spin = new THREE.Group(); earth.add(spin);
+  const earthMat = new THREE.ShaderMaterial({
+    uniforms: {
+      dayMap: { value: tex('earth-day.webp') }, nightMap: { value: tex('earth-night.webp') },
+      sunDir: { value: new THREE.Vector3(0, 1, 0) }, uRim: { value: new THREE.Color('#e3907c') },
+    },
+    vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){ vUv = uv; vec4 wp = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition-wp.xyz); gl_Position = projectionMatrix*viewMatrix*wp; }`,
+    fragmentShader: `uniform sampler2D dayMap, nightMap; uniform vec3 sunDir, uRim; varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){
+        vec3 n = normalize(vN); float l = dot(n, sunDir);
+        float day = smoothstep(-.12, .3, l);
+        vec3 dc = texture2D(dayMap, vUv).rgb * (.25 + .9*max(l,0.));
+        vec3 nc = pow(texture2D(nightMap, vUv).rgb, vec3(1.3)) * vec3(1.4,1.15,.85) * 1.6;
+        vec3 c = mix(nc, dc, day);
+        float rim = pow(1. - max(dot(n, vV), 0.), 2.6);
+        c = mix(c, uRim, rim * .85);
+        gl_FragColor = vec4(c, 1.);
+        #include <colorspace_fragment>
+      }`,
   });
+  spin.add(new THREE.Mesh(new THREE.SphereGeometry(1, 160, 120), earthMat));
+  const atmo = new THREE.Mesh(new THREE.SphereGeometry(1.06, 96, 64), new THREE.ShaderMaterial({
+    uniforms: { uRim: earthMat.uniforms.uRim, uA: { value: 1 } },
+    vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vec4 wp = modelMatrix*vec4(position,1.); vN = normalize(mat3(modelMatrix)*normal); vV = normalize(cameraPosition-wp.xyz); gl_Position = projectionMatrix*viewMatrix*wp; }`,
+    fragmentShader: `uniform vec3 uRim; uniform float uA; varying vec3 vN; varying vec3 vV; void main(){ float i = clamp(pow(.62 - dot(vN,vV), 3.5), 0., 1.); gl_FragColor = vec4(uRim*i*1.2, i*uA); }`,
+    side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  earth.add(atmo);
 
-  const sunTex = (() => {
-    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
-    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    gr.addColorStop(0, 'rgba(255,248,232,1)'); gr.addColorStop(.18, 'rgba(255,226,170,.95)'); gr.addColorStop(.42, 'rgba(240,190,110,.32)'); gr.addColorStop(1, 'rgba(240,190,110,0)');
-    g.fillStyle = gr; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  })();
-  const sun = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
-  sun.scale.setScalar(.34); arc.add(sun);
+  // Tahajjud lights: rough five-kilometre areas, never points, on the night side.
+  const PLACES = [[21.4,39.8],[24.5,39.6],[31.8,35.2],[30,31.2],[33.5,36.3],[33.3,44.4],[35.7,51.4],[41,29],[39.9,32.9],[24.7,46.7],[25.3,51.5],[25.2,55.3],[23.6,58.4],[15.4,44.2],[2,45.3],[9,38.7],[15.6,32.5],[36.8,10.2],[36.7,3.1],[33.6,-7.6],[14.7,-17.4],[12.6,-8],[13.5,2.1],[9.1,7.4],[12,8.5],[6.5,3.4],[-6.8,39.3],[24.9,67],[31.5,74.3],[33.7,73],[28.6,77.2],[19.1,72.9],[17.4,78.5],[23.8,90.4],[22.3,91.8],[34.5,69.2],[41.3,69.3],[43.2,76.9],[3.1,101.7],[1.5,103.8],[5.4,100.3],[-6.2,106.8],[-7.3,112.7],[-6.9,107.6],[-5.1,119.4],[3.6,98.7],[-0.9,100.4],[7.1,125.6],[51.5,-0.1],[52.5,-1.9],[48.9,2.4],[52.5,13.4],[50.9,6.9],[40.7,-74],[41.9,-87.6],[43.7,-79.4],[-33.9,151.2],[-26.2,28],[-33.9,18.4],[55.8,37.6],[55.8,49.1],[40.4,49.9],[38.6,68.8],[29.4,47.9]];
+  const NL = 380, lp = new Float32Array(NL * 3), lr = new Float32Array(NL);
+  for (let i = 0; i < NL; i++) {
+    const [la, lo] = PLACES[i % PLACES.length];
+    const lat = THREE.MathUtils.degToRad(la + (rnd() - .5) * 5), lon = THREE.MathUtils.degToRad(lo + (rnd() - .5) * 6);
+    lp[i * 3] = 1.008 * Math.cos(lat) * Math.cos(lon); lp[i * 3 + 1] = 1.008 * Math.sin(lat); lp[i * 3 + 2] = -1.008 * Math.cos(lat) * Math.sin(lon);
+    lr[i] = rnd();
+  }
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute('position', new THREE.BufferAttribute(lp, 3)); lg.setAttribute('aR', new THREE.BufferAttribute(lr, 1));
+  const lightMat = new THREE.ShaderMaterial({
+    uniforms: { uOn: { value: 0 }, uTime: { value: 0 }, uPx: { value: 1 } },
+    vertexShader: `attribute float aR; uniform float uOn, uTime, uPx; varying float vA;
+      void main(){ vec4 mv = modelViewMatrix*vec4(position,1.); vec3 n = normalize(mat3(modelViewMatrix)*position);
+        float face = smoothstep(0., .3, dot(n, normalize(-mv.xyz))); float on = smoothstep(aR-.1, aR, uOn);
+        vA = 1.4*face*on*(.65+.35*sin(uTime*(1.+aR*1.5)+aR*30.)); gl_PointSize = (8.+9.*aR)*uPx; gl_Position = projectionMatrix*mv; }`,
+    fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord-.5); float a = pow(smoothstep(.5,0.,d),2.); gl_FragColor = vec4(mix(vec3(.45,.72,1.), vec3(.9,.96,1.), a*a), a*vA); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  spin.add(new THREE.Points(lg, lightMat));
 
-  /* ── the phone ── */
+  /* ── the phone, showing the part of the app that belongs to this hour ── */
   const phone = new THREE.Group(); scene.add(phone);
-  const PW = .66, PH = 1.38, PR = .1;
+  const PW = .66, PH = 1.38;
   const rr = (w, h, r) => { const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
     s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
     s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
     s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; };
-  const bodyGeo = new THREE.ExtrudeGeometry(rr(PW, PH, PR), { depth: .05, bevelEnabled: true, bevelThickness: .012, bevelSize: .012, bevelSegments: 4, curveSegments: 16 });
-  bodyGeo.translate(0, 0, -.055);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2a231c, metalness: .85, roughness: .32, transparent: true });
-  phone.add(new THREE.Mesh(bodyGeo, bodyMat));
+  const body = new THREE.ExtrudeGeometry(rr(PW, PH, .1), { depth: .045, bevelEnabled: true, bevelThickness: .014, bevelSize: .014, bevelSegments: 5, curveSegments: 18 });
+  body.translate(0, 0, -.052);
+  phone.add(new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: 0xd9d3c7, metalness: .9, roughness: .28 })));
   const screenMat = new THREE.ShaderMaterial({
-    uniforms: { mapA: { value: null }, mapB: { value: null }, uMix: { value: 0 }, uOpacity: { value: 1 }, uAspect: { value: PW / PH } },
+    uniforms: { a: { value: null }, b: { value: null }, mixAB: { value: 0 }, asp: { value: PW / PH } },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-    fragmentShader: `uniform sampler2D mapA, mapB; uniform float uMix, uOpacity, uAspect; varying vec2 vUv;
-      float rbox(vec2 p, vec2 b, float r){ vec2 q = abs(p)-b+r; return length(max(q,0.))+min(max(q.x,q.y),0.)-r; }
-      void main(){
-        vec2 p = (vUv-.5) * vec2(uAspect,1.);
-        float d = rbox(p, vec2(uAspect*.5,.5), .062);
-        float m = 1. - smoothstep(0., .004, d);
-        vec3 c = mix(texture2D(mapA, vUv).rgb, texture2D(mapB, vUv).rgb, uMix);
-        gl_FragColor = vec4(c, m * uOpacity);
+    fragmentShader: `uniform sampler2D a, b; uniform float mixAB, asp; varying vec2 vUv;
+      float rb(vec2 p, vec2 s, float r){ vec2 q = abs(p)-s+r; return length(max(q,0.))+min(max(q.x,q.y),0.)-r; }
+      void main(){ vec2 p = (vUv-.5)*vec2(asp,1.); float m = 1.-smoothstep(0.,.004, rb(p, vec2(asp*.5,.5), .064));
+        vec3 c = mix(texture2D(a, vUv).rgb, texture2D(b, vUv).rgb, mixAB);
+        float glass = smoothstep(.0,.9, vUv.y - vUv.x*.6) * .06;
+        gl_FragColor = vec4(c + glass, m);
         #include <colorspace_fragment>
       }`,
     transparent: true,
   });
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(PW - .03, PH - .03), screenMat);
-  screen.position.z = .009; phone.add(screen);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(PW - .028, PH - .028), screenMat); screen.position.z = .01; phone.add(screen);
 
-  const screens = { home: tex('screens/home.webp'), mushaf: tex('screens/mushaf.webp') };
-  // The prayer screen that covers a held app, drawn once the fonts are in.
   const shieldCanvas = document.createElement('canvas'); shieldCanvas.width = 588; shieldCanvas.height = 1280;
-  const shieldTex = new THREE.CanvasTexture(shieldCanvas); shieldTex.colorSpace = THREE.SRGBColorSpace;
+  const shield = new THREE.CanvasTexture(shieldCanvas); shield.colorSpace = THREE.SRGBColorSpace;
   function drawShield() {
     const g = shieldCanvas.getContext('2d'), W = 588, H = 1280;
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d1c36'); bg.addColorStop(1, '#050b18');
-    g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(246,241,231,${.15 + Math.random() * .35})`; g.fillRect(Math.random() * W, Math.random() * H * .6, 1.6, 1.6); }
-    g.textAlign = 'center'; g.fillStyle = '#f6f1e7';
-    g.font = '600 26px Inter, sans-serif'; g.fillStyle = 'rgba(246,241,231,.55)'; g.fillText('PRAYER FOCUS', W / 2, 360);
-    g.font = '700 104px "Playfair Display", serif'; g.fillStyle = '#f6f1e7'; g.fillText('Dhuhr', W / 2, 490);
-    g.font = '400 30px Inter, sans-serif'; g.fillStyle = 'rgba(246,241,231,.72)';
-    g.fillText('This app is paused', W / 2, 580); g.fillText('until you have prayed.', W / 2, 624);
-    g.font = '500 32px Inter, sans-serif'; g.fillStyle = '#d9b26a'; g.fillText('26 minutes left', W / 2, 720);
-    g.fillStyle = '#d9b26a'; g.beginPath(); g.roundRect(70, 800, W - 140, 104, 52); g.fill();
-    g.fillStyle = '#060d1b'; g.font = '600 34px Inter, sans-serif'; g.fillText('I am praying now', W / 2, 864);
-    g.fillStyle = 'rgba(246,241,231,.62)'; g.font = '400 30px Inter, sans-serif';
-    g.fillText('I missed this prayer', W / 2, 990); g.fillText('Close', W / 2, 1060);
-    shieldTex.needsUpdate = true;
+    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d1c36'); bg.addColorStop(1, '#050b18'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.textAlign = 'center';
+    g.fillStyle = 'rgba(246,241,231,.55)'; g.font = '600 26px Satoshi, sans-serif'; g.fillText('PRAYER FOCUS', W / 2, 360);
+    g.fillStyle = '#f6f1e7'; g.font = '600 110px "Clash Display", sans-serif'; g.fillText('Dhuhr', W / 2, 490);
+    g.fillStyle = 'rgba(246,241,231,.74)'; g.font = '400 31px Satoshi, sans-serif'; g.fillText('This app is paused', W / 2, 580); g.fillText('until you have prayed.', W / 2, 624);
+    g.fillStyle = '#d9b26a'; g.font = '500 32px Satoshi, sans-serif'; g.fillText('26 minutes left', W / 2, 720);
+    g.beginPath(); g.roundRect(70, 800, W - 140, 104, 52); g.fill();
+    g.fillStyle = '#060d1b'; g.font = '700 34px Satoshi, sans-serif'; g.fillText('I am praying now', W / 2, 864);
+    g.fillStyle = 'rgba(246,241,231,.62)'; g.font = '400 30px Satoshi, sans-serif'; g.fillText('I missed this prayer', W / 2, 990); g.fillText('Close', W / 2, 1060);
+    shield.needsUpdate = true;
   }
-  screenMat.uniforms.mapA.value = screens.home; screenMat.uniforms.mapB.value = shieldTex;
-
-  // The apps that usually take the minutes you meant to pray in.
-  const APP_COLORS = [[0xe1306c, 0xf77737], [0xff0050, 0x00f2ea], [0xff0000, 0xcc0000], [0x1d9bf0, 0x0d6fb8], [0x25d366, 0x128c7e],
-    [0x5865f2, 0x404eed], [0xfffc00, 0xe8d800], [0x111111, 0x444444], [0xe50914, 0x831010]];
-  const appGeo = new THREE.ExtrudeGeometry(rr(.15, .15, .038), { depth: .018, bevelEnabled: true, bevelThickness: .006, bevelSize: .006, bevelSegments: 3, curveSegments: 10 });
-  const apps = APP_COLORS.map(([a, b], i) => {
-    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(a).lerp(new THREE.Color(b), .35), metalness: .2, roughness: .45, transparent: true });
-    const m = new THREE.Mesh(appGeo, mat); m.userData = { base: mat.color.clone(), phase: (i / APP_COLORS.length) * Math.PI * 2, tilt: (rnd() - .5) * .8 };
-    phone.add(m); return m;
-  });
-  const grey = new THREE.Color(0x3a332c);
-
-  /* ── a year of prayer, in 365 dots ── */
-  const N_DAYS = 365;
-  const dotMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.0145, 12, 10), new THREE.MeshStandardMaterial({ roughness: .4, metalness: .1, transparent: true }), N_DAYS);
-  scene.add(dotMesh);
-  const dotFrom = [], dotTo = [];
-  const C_ALL = new THREE.Color(0x2e9e80), C_OPEN = new THREE.Color(0xe0a23c), C_MISS = new THREE.Color(0xcf5c6b), C_NOT = new THREE.Color(0x2b2520);
-  const today = 272; // example data runs January to September
-  for (let d = 0; d < N_DAYS; d++) {
-    const week = Math.floor(d / 7), day = d % 7, cols = 53;
-    const x = (week - cols / 2) * .036, y = (3 - day) * .036;
-    const bend = Math.cos((week / cols - .5) * 1.1) * .3; // the grid curves, like a page of a ledger
-    dotTo.push(new THREE.Vector3(x, y, bend - .3));
-    const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, rr2 = .9 + rnd() * .9;
-    dotFrom.push(new THREE.Vector3(Math.sqrt(1 - u * u) * Math.cos(th) * rr2, u * rr2, Math.sqrt(1 - u * u) * Math.sin(th) * rr2));
-    const r = rnd();
-    const c = d > today ? C_NOT : d === today ? C_OPEN : d > today - 37 ? C_ALL : r < .8 ? C_ALL : r < .9 ? C_OPEN : C_MISS;
-    dotMesh.setColorAt(d, c);
-  }
-  dotMesh.instanceColor.needsUpdate = true;
-  const sampleDay = { all: 120, open: today, miss: (() => { for (let d = 200; d > 0; d--) { const c = new THREE.Color(); dotMesh.getColorAt(d, c); if (c.equals(C_MISS)) return d; } return 50; })() };
-  const dotM4 = new THREE.Matrix4(), dotQ = new THREE.Quaternion(), dotS = new THREE.Vector3(), dotP = new THREE.Vector3();
-
-  /* ── the mushaf ── */
-  const book = new THREE.Group(); scene.add(book);
-  const BW = .62, BH = .9;
-  const pageCanvas = document.createElement('canvas'); pageCanvas.width = 620; pageCanvas.height = 900;
-  const pageTex = new THREE.CanvasTexture(pageCanvas); pageTex.colorSpace = THREE.SRGBColorSpace; pageTex.anisotropy = 8;
-  const leftCanvas = document.createElement('canvas'); leftCanvas.width = 620; leftCanvas.height = 900;
-  const leftTex = new THREE.CanvasTexture(leftCanvas); leftTex.colorSpace = THREE.SRGBColorSpace; leftTex.anisotropy = 8;
-  // Al-Fatihah, word by word, so one word at a time can be lit as it is recited.
-  const FATIHA = [
-    'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-    'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ',
-    'ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-    'مَٰلِكِ يَوْمِ ٱلدِّينِ',
-    'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
-    'ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ',
-    'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
-  ];
-  const DIGITS = '٠١٢٣٤٥٦٧٨٩';
-  const words = []; FATIHA.forEach((a, i) => a.split(' ').forEach((w, k, arr) => words.push({ w, ayah: i, last: k === arr.length - 1 })));
-  function frame(g, W, H) {
-    g.fillStyle = '#efe5cf'; g.fillRect(0, 0, W, H);
-    const grd = g.createRadialGradient(W / 2, H / 2, H * .2, W / 2, H / 2, H * .75); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(90,60,20,.18)');
-    g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    g.strokeStyle = '#a8833f'; g.lineWidth = 3; g.strokeRect(34, 34, W - 68, H - 68);
-    g.lineWidth = 1; g.strokeRect(44, 44, W - 88, H - 88);
-  }
-  function drawLeft() {
-    const g = leftCanvas.getContext('2d'), W = 620, H = 900; frame(g, W, H);
-    g.textAlign = 'center'; g.direction = 'rtl'; g.fillStyle = '#2b2117';
-    g.strokeStyle = '#a8833f'; g.lineWidth = 2; g.beginPath(); g.roundRect(110, 120, W - 220, 92, 46); g.stroke();
-    g.font = '700 46px Amiri, serif'; g.fillText('سُورَةُ ٱلْفَاتِحَةِ', W / 2, 180);
-    g.font = '400 30px Amiri, serif'; g.fillStyle = '#6b5434';
-    g.fillText('مَكِّيَّة · ٧ آيَات', W / 2, 270);
-    g.direction = 'ltr'; g.font = 'italic 400 34px "Playfair Display", serif'; g.fillStyle = '#3a2e20';
-    g.fillText('The Opening', W / 2, 470);
-    g.font = '400 20px "IBM Plex Mono", monospace'; g.fillStyle = '#7a6444';
-    g.fillText('PAGE 1 OF 604', W / 2, 520);
-    g.strokeStyle = '#a8833f'; g.beginPath(); g.moveTo(W / 2 - 60, 600); g.lineTo(W / 2 + 60, 600); g.stroke();
-    g.font = '400 19px Inter, sans-serif'; g.fillStyle = '#7a6444';
-    g.fillText('The word lights as it is recited.', W / 2, 650);
-    leftTex.needsUpdate = true;
-  }
-  function drawPage(lit) {
-    const g = pageCanvas.getContext('2d'), W = 620, H = 900; frame(g, W, H);
-    g.direction = 'rtl'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
-    const size = 34; g.font = `400 ${size}px Amiri, serif`;
-    const left = 78, right = W - 78, lineH = 74; let x = right, y = 150;
-    const space = g.measureText(' ').width;
-    words.forEach((o, i) => {
-      const w = g.measureText(o.w).width;
-      const mark = o.last ? DIGITS[o.ayah + 1] : '';
-      const markW = mark ? size * 1.15 : 0;
-      if (x - w - markW < left) { x = right; y += lineH; }
-      if (i === lit) { g.fillStyle = 'rgba(217,178,106,.32)'; g.beginPath(); g.roundRect(x - w - 8, y - size * 1.05, w + 16, size * 1.5, 10); g.fill(); g.fillStyle = '#8a6420'; }
-      else g.fillStyle = '#231a12';
-      g.fillText(o.w, x, y); x -= w + space;
-      if (mark) {
-        const cx = x - markW / 2 + space / 2, cy = y - size * .32;
-        g.strokeStyle = '#a8833f'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, size * .5, 0, Math.PI * 2); g.stroke();
-        g.fillStyle = '#6b5434'; g.font = `400 ${size * .62}px Amiri, serif`; g.textAlign = 'center';
-        g.fillText(mark, cx, cy + size * .22); g.textAlign = 'right'; g.font = `400 ${size}px Amiri, serif`;
-        x -= markW + space;
-      }
-    });
-    pageTex.needsUpdate = true;
-  }
-  // A solid book: two page blocks in leather, opaque, so nothing shows through.
-  // Each half is built lying open, flat, facing you; the spine is the y axis.
-  const T = .05, CO = .012; // page-block thickness, cover overhang
-  const paperMat = new THREE.MeshStandardMaterial({ color: 0xe6d9bd, roughness: .92 });
-  const edgeMat = new THREE.MeshStandardMaterial({ color: 0xd8c8a4, roughness: .95 });
-  const coverMat = new THREE.MeshStandardMaterial({ color: 0x3b2516, roughness: .55, metalness: .1 });
-  const goldMat = new THREE.MeshStandardMaterial({ color: 0xc19a52, roughness: .3, metalness: .85 });
-  function half(dir, map) {
-    const g = new THREE.Group();
-    const block = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, T), [edgeMat, edgeMat, edgeMat, edgeMat, paperMat, paperMat]);
-    block.position.set(dir * BW / 2, 0, -T / 2); g.add(block);
-    const cover = new THREE.Mesh(new THREE.BoxGeometry(BW + CO, BH + CO * 2, .014), coverMat);
-    cover.position.set(dir * (BW + CO) / 2, 0, -T - .007); g.add(cover);
-    const rule = new THREE.Mesh(new THREE.BoxGeometry(BW + CO + .002, .006, .016), goldMat); // gilt line on the cover edge
-    rule.position.set(dir * (BW + CO) / 2, -(BH / 2 + CO - .003), -T - .007); g.add(rule);
-    const page = new THREE.Mesh(new THREE.PlaneGeometry(BW * .99, BH * .99), new THREE.MeshStandardMaterial({ map, roughness: .9 }));
-    page.position.set(dir * BW / 2, 0, .0012); g.add(page);
-    return g;
-  }
-  const rightHalf = half(1, pageTex), leftHalf = half(-1, leftTex);
-  const spine = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, BH + CO * 2, 16, 1, true, Math.PI / 2, Math.PI), coverMat);
-  spine.position.z = -T - .01;
-  book.add(rightHalf, leftHalf, spine);
-
-  /* ── annotations ── */
-  const anno = $('#anno'), annoSvg = $('.anno__svg', anno), stepsEl = $('.story__steps');
-  const labels = [];
-  function addLabel(group, anchor, mono, title, small, side = 1, lift = -1) {
-    const el = document.createElement('div'); el.className = 'anno__label';
-    el.innerHTML = `<span class="mono">${mono}</span><b>${title}</b>${small ? `<small>${small}</small>` : ''}`;
-    anno.append(el);
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); annoSvg.append(path);
-    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); dot.setAttribute('r', 2.5); annoSvg.append(dot);
-    const l = { group, anchor, el, path, dot, side, lift, on: false }; labels.push(l); return l;
-  }
-  PRAYERS.forEach((p, i) => addLabel(0, markers[i], `0${i + 1}`, p.name, `${p.time} · example`, i < 3 ? -1 : 1, i % 2 ? 1 : -1));
-  const anchorAt = (parent, x, y, z) => { const o = new THREE.Object3D(); o.position.set(x, y, z); parent.add(o); return o; };
-  addLabel(1, anchorAt(phone, 0, .32, .01), 'A', 'The prayer screen', 'Covers a held app within a second', 1, -1);
-  addLabel(1, anchorAt(phone, .1, -.32, .01), 'B', 'Then it lets go', 'Prayed or not, nothing stays locked', 1, 1);
-  const dotAnchors = { all: new THREE.Object3D(), open: new THREE.Object3D(), miss: new THREE.Object3D() };
-  Object.values(dotAnchors).forEach((o) => scene.add(o));
-  addLabel(2, dotAnchors.all, 'G', 'All five', 'Confirmed, and counted', -1, -1);
-  addLabel(2, dotAnchors.miss, 'R', 'Missed one', 'Recorded honestly', -1, 1);
-  addLabel(2, dotAnchors.open, 'A', 'Today', 'Still open', 1, -1);
-
-  /* ── keyframes: where everything stands at each point of the story ── */
-  // f: 0 hero · 1.5 the day · 2.5 focus · 3.5 the year · 4.5 Tahajjud · 5.5 the Qur'an · 7 the rest of the page
-  const K = [
-    { f: 0,   cam: [0, .25, 4.9], look: [.2, 0, 0], globe: [1.35, -.05, 0, .92],     gA: 1,  ring: .55, phone: [1.3, -2.4, .3, 0], pA: 0, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .06, bloom: .3 },
-    { f: 1.5, cam: [0, .95, 4.3], look: [.55, 0, 0], globe: [.75, -.05, 0, .92], gA: 1,  ring: 1,   phone: [1.3, -2.4, .3, 0], pA: 0, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .04, bloom: .2 },
-    { f: 2.5, cam: [0, .3, 4.2],  look: [.55, 0, 0], globe: [2.2, .2, -2.6, .8], gA: .55, ring: .25, phone: [.8, 0, .55, -.38], pA: 1, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .04, bloom: .2 },
-    { f: 3.5, cam: [0, .35, 4.0], look: [.6, 0, 0], globe: [2.4, .3, -3.2, .75], gA: .35, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 1, book: [1, -2.6, .4], bA: 0, spin: .04, bloom: .2 },
-    { f: 4.5, cam: [0, .2, 4.1],  look: [.55, .05, 0], globe: [1.05, 0, 0, 1.08], gA: 1, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .015, bloom: 1 },
-    { f: 5.5, cam: [0, .55, 3.9], look: [.6, 0, 0], globe: [2.1, .25, -3, .7],  gA: .45, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.98, .02, .55], bA: 1, spin: .03, bloom: .6 },
-    { f: 7,   cam: [0, .3, 5.2],  look: [0, 0, 0],   globe: [0, 0, -1.5, 1.2],  gA: .32, ring: .2, phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.98, -2.6, .55], bA: 0, spin: .05, bloom: .55 },
-  ];
-  function at(f) {
-    let i = 0; while (i < K.length - 2 && f > K[i + 1].f) i++;
-    const a = K[i], b = K[i + 1], t = smooth(clamp((f - a.f) / (b.f - a.f)));
-    const mix = (x, y) => Array.isArray(x) ? x.map((v, k) => lerp(v, y[k], t)) : lerp(x, y, t);
-    const o = {}; for (const k in a) if (k !== 'f') o[k] = mix(a[k], b[k]); return o;
-  }
+  document.fonts.ready.then(drawShield);
+  const SCREENS = [tex('screens/home.webp'), shield, tex('screens/mushaf.webp'), tex('screens/friends.webp'), tex('screens/profile.webp'), tex('screens/tahajjud.webp')];
+  screenMat.uniforms.a.value = SCREENS[0]; screenMat.uniforms.b.value = SCREENS[1];
 
   /* ── frame ── */
-  const opacityOf = new Map();
-  function setAlpha(obj, a) {
-    obj.visible = a > .005;
-    obj.traverse((m) => {
-      if (!m.material) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      mats.forEach((mat) => {
-        if (!opacityOf.has(mat)) opacityOf.set(mat, mat.uniforms?.uOpacity ? 1 : mat.opacity);
-        const base = opacityOf.get(mat);
-        if (mat.uniforms?.uOpacity) { mat.uniforms.uOpacity.value = base * a; return; }
-        const t = base * a < .999;
-        if (mat.transparent !== t) { mat.transparent = t; mat.needsUpdate = true; }
-        mat.opacity = base * a;
-      });
-    });
-  }
-
   let narrow = false;
   function resize() {
-    const w = innerWidth, h = innerHeight;
-    narrow = w < 860;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.updateProjectionMatrix();
-    lightMat.uniforms.uScale.value = renderer.getPixelRatio() * (h / 900) * 1.4;
+    narrow = innerWidth < 860;
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+    starMat.uniforms.uPx.value = lightMat.uniforms.uPx.value = renderer.getPixelRatio() * (narrow ? .8 : 1);
   }
   resize(); addEventListener('resize', resize);
-
   let mx = 0, my = 0, pmx = 0, pmy = 0;
   addEventListener('pointermove', (e) => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
 
-  const v = new THREE.Vector3(), nightDir = new THREE.Vector3();
-  const clock = new THREE.Clock();
-  let fSmooth = phase(), lit = -1, litT = 0, earthSpin = 0;
-  const readLabel = $('#readout-label'), readBar = $('#readout-bar'), readVal = $('#readout-val');
-  const READ = [['Sun’s path', 180, '°'], ['Window', 30, 'm'], ['Days', 365, ''], ['Lights tonight', N_LIGHTS, ''], ['Page', 604, '']];
-
-  document.fonts.ready.then(() => { drawShield(); drawLeft(); drawPage(0); });
-
-  function frameLoop() {
+  const clock = new THREE.Clock(), v = new THREE.Vector3();
+  let dS = dayPos();
+  const rim = new THREE.Color();
+  function frame() {
     const dt = Math.min(clock.getDelta(), .05), time = clock.elapsedTime;
-    if (lenis) lenis.raf(performance.now());
-    const fRaw = phase();
-    fSmooth += (fRaw - fSmooth) * (reduce ? 1 : Math.min(1, dt * 7));
-    const f = fSmooth;
-    updateNav(scrollY);
+    const dRaw = dayPos();
+    dS += (dRaw - dS) * (reduce ? 1 : Math.min(1, dt * 6));
+    const d = dS;
+    const s = pageState(dRaw);
+    pmx += (mx - pmx) * .05; pmy += (my - pmy) * .05;
 
-    const step = clamp(Math.floor(fRaw - 1), 0, 4);
-    if (fRaw >= 1 && fRaw < 6) setStep(step);
-    const local = clamp(f - 1 - step);
-    const s = at(f);
+    // How far the camera has pulled back from the horizon to see the whole Earth.
+    const orbit = smooth(clamp((d - 5.05) / .8));
+    camera.position.set(pmx * .4, .2 - pmy * .2, 7);
+    camera.lookAt(0, .45, 0);
 
-    // layout: on narrow screens the copy sits at the bottom, so the stage centres and lifts
-    const xs = narrow ? .12 : 1, yl = narrow ? (f > 1 && f < 6 ? .95 : .3) : 0, zb = narrow ? 1.55 : 1;
-    pmx += (mx - pmx) * .04; pmy += (my - pmy) * .04;
-    camera.position.set(s.cam[0] + pmx * .35, s.cam[1] - pmy * .25 - yl * .2, s.cam[2] * zb);
-    camera.lookAt(s.look[0] * xs, s.look[1] + yl * .1, s.look[2]);
+    // The horizon: a huge Earth whose curve sits low in the frame.
+    const horizon = { pos: [0, narrow ? -10.6 : -10.2, -3], scale: 9.4, rx: 1.13, ry: 0 };
+    const globe = { pos: [narrow ? 0 : 1.7, narrow ? 1.1 : .85, -1], scale: narrow ? 1 : 1.15, rx: -.25, ry: -3.0 };
+    earth.position.set(lerp(horizon.pos[0], globe.pos[0], orbit), lerp(horizon.pos[1], globe.pos[1], orbit), lerp(horizon.pos[2], globe.pos[2], orbit));
+    earth.scale.setScalar(lerp(horizon.scale, globe.scale, orbit));
+    spin.rotation.set(lerp(horizon.rx, globe.rx, orbit), lerp(horizon.ry, globe.ry, orbit) + (reduce ? 0 : time * .01 * orbit), 0);
+    rim.set(s.bot); earthMat.uniforms.uRim.value.copy(rim).lerp(new THREE.Color('#8fb3ff'), orbit * .7);
 
-    // globe
-    globe.position.set(s.globe[0] * xs, s.globe[1] + yl, s.globe[2]); globe.scale.setScalar(s.globe[3]);
-    earthSpin += dt * s.spin * (reduce ? 0 : 1);
-    const tahajjudTurn = smooth(clamp((f - 3.6) / 1.2)) * (1 - smooth(clamp((f - 5.2) / .8)));
-    // Longitude L faces the camera when rotation.y = -PI/2 - L. Hero and the
-    // night both look at the band from Africa to South East Asia.
-    const drift = Math.sin(earthSpin * .5) * .55;
-    earth.rotation.y = lerp(-2.45 + drift, -2.6, tahajjudTurn);
-    earth.rotation.x = .18;
-    setAlpha(earth, s.gA); atmo.material.uniforms.uOpacity.value = s.gA;
-    lightMat.uniforms.uTime.value = time;
-    lightMat.uniforms.uBloom.value = s.bloom * (step === 3 ? (.25 + .75 * smooth(local)) : 1);
+    // The sun walks the sky from east to west as the day goes on.
+    const dayFrac = clamp((d + .2) / 3.8);
+    const elev = s.sun;
+    sun.position.set(lerp(-5.5, 5.5, dayFrac), -1.9 + elev * .06, -9);
+    sun.material.opacity = clamp((elev + 8) / 10) * (1 - orbit);
+    sun.scale.setScalar(lerp(4.4, 2.8, clamp(elev / 60)));
+    sun.material.color.set(elev < 12 ? '#ffc79a' : '#fff6e6');
+    moon.position.set(-3.4, 2.6, -10); moon.material.opacity = clamp(s.night * 1.4 - .4) * (1 - orbit * .5);
+    starMat.uniforms.uNight.value = s.night; starMat.uniforms.uTime.value = time;
+    // light on the Earth comes from the sun, or from behind it at night
+    v.copy(sun.position).sub(earth.position).normalize();
+    const nightDir = new THREE.Vector3(.2, -.6, -1).normalize();
+    earthMat.uniforms.sunDir.value.copy(v).lerp(nightDir, clamp(1 - (elev + 6) / 14)).normalize();
+    sunLight.position.copy(sun.position); sunLight.intensity = .6 + clamp(elev / 40) * 1.6;
+    lightMat.uniforms.uOn.value = orbit * (1 - smooth(clamp((d - 6) * 1.5))); lightMat.uniforms.uTime.value = time;
 
-    // the sun on its path: in the day movement it travels Fajr → Isha
-    // Outside the day movement the sun is behind the Earth: it is night.
-    const dayW = smooth(clamp((f - .8) / .45)) * (1 - smooth(clamp((f - 2.05) / .45)));
-    const sunT = f < 1.05 ? 0 : f < 2.2 ? smooth(clamp((f - 1.05) / 1.05)) : 1;
-    const sa = lerp(A0, A1, sunT);
-    sun.position.set(Math.cos(sa) * R, 0, Math.sin(sa) * R);
-    arc.updateMatrixWorld(); globe.updateMatrixWorld(); sun.getWorldPosition(v);
-    v.sub(globe.position).normalize();
-    nightDir.set(-.55, .2, -.8).normalize();
-    v.lerp(nightDir, 1 - dayW).normalize();
-    // the shader compares this with world-space normals
-    earthMat.uniforms.sunDir.value.copy(v);
-    ringMat.opacity = .22 * s.ring; tickMat.opacity = .3 * s.ring; dayMat.opacity = .9 * s.ring;
-    sun.material.opacity = dayW; sun.visible = dayW > .01;
-    markers.forEach((m, i) => { m.material.opacity = s.ring; m.scale.setScalar(Math.abs(PRAYERS[i].t - sunT) < .06 ? 1.8 : 1); });
-    arc.visible = s.ring > .01;
+    // The phone rises with Fajr, changes its screen at each prayer, and steps back for the night.
+    const show = smooth(clamp((d + .45) / .5)) * (1 - smooth(clamp((d - 5.05) / .45)));
+    const base = narrow ? [0, 1.05, 1.6, .68] : [1.45, .4, 1.9, 1];
+    phone.position.set(base[0] + pmx * .1, base[1] - (1 - show) * 3.2 + Math.sin(time * .8) * .03, base[2]);
+    phone.scale.setScalar(base[3]);
+    const ci = clamp(Math.floor(d), 0, 5);
+    phone.rotation.set(-.06 - pmy * .12, (ci % 2 ? .22 : -.22) * (narrow ? .5 : 1) + pmx * .3, (ci % 2 ? -.03 : .03));
+    phone.visible = show > .01;
+    // crossfade from this chapter's screen into the next across the boundary
+    const local = d - Math.floor(d);
+    const a = clamp(Math.floor(d), 0, 5), b = clamp(a + 1, 0, 5);
+    screenMat.uniforms.a.value = SCREENS[a]; screenMat.uniforms.b.value = SCREENS[b];
+    screenMat.uniforms.mixAB.value = a === b ? 0 : smooth(clamp((local - .82) / .18));
 
-    // phone, apps and the prayer screen
-    phone.position.set(s.phone[0] * xs + (narrow ? .02 : 0), s.phone[1] + yl, s.phone[2]);
-    phone.rotation.set(-.08 + pmy * .1, s.phone[3] + Math.sin(time * .6) * .04 + pmx * .2, .02);
-    setAlpha(phone, s.pA);
-    const hold = step === 1 ? smooth(clamp((local - .3) / .22)) : f > 3 ? 1 : 0;
-    screenMat.uniforms.uMix.value = hold;
-    apps.forEach((m, i) => {
-      const a = m.userData.phase + time * .35 * (1 - hold * .85);
-      const r = lerp(.62, .5, hold), z = lerp(.06, -.18, hold);
-      m.position.set(Math.cos(a) * r * 1.05, Math.sin(a) * r * 1.25, z + Math.sin(a * 2) * .05);
-      m.rotation.set(m.userData.tilt * .4, Math.cos(a) * .4 + m.userData.tilt, a * .1);
-      m.material.color.copy(m.userData.base).lerp(grey, hold * .85);
-      m.scale.setScalar(lerp(1, .82, hold));
-    });
-
-    // the year: dots fly in from around the globe and settle into a ledger of weeks
-    // the year only arrives once its movement has begun, and leaves before the night
-    const dA = s.dots * smooth(clamp((f - 3.05) / .35)) * (1 - smooth(clamp((f - 4.05) / .3)));
-    dotMesh.visible = dA > .01; dotMesh.material.opacity = dA;
-    if (dotMesh.visible) {
-      const settle = step === 2 ? smooth(clamp(local / .7)) : dA;
-      const dx = .78 * xs, dy = yl * .9, dz = .55;
-      for (let d = 0; d < N_DAYS; d++) {
-        const k = clamp(settle * 1.25 - (d / N_DAYS) * .25);
-        const e = smooth(k);
-        dotP.lerpVectors(dotFrom[d], dotTo[d], e);
-        dotP.x += dx; dotP.y += dy + Math.sin(time * .8 + d * .3) * .004 * e; dotP.z += dz;
-        dotS.setScalar(d === today ? 1.5 + Math.sin(time * 3) * .2 : 1);
-        dotM4.compose(dotP, dotQ, dotS); dotMesh.setMatrixAt(d, dotM4);
-        if (d === sampleDay.all) dotAnchors.all.position.copy(dotP);
-        if (d === sampleDay.miss) dotAnchors.miss.position.copy(dotP);
-        if (d === sampleDay.open) dotAnchors.open.position.copy(dotP);
-      }
-      dotMesh.instanceMatrix.needsUpdate = true;
-    }
-
-    // the mushaf opens, then the recitation lights one word at a time
-    book.position.set(s.book[0] * xs, s.book[1] + yl * .8, s.book[2]);
-    book.rotation.set(-.42 + pmy * .08, -.12 + pmx * .15, 0); book.scale.setScalar(narrow ? .9 : .82);
-    setAlpha(book, s.bA);
-    const open = step === 4 ? smooth(clamp(local / .5)) : f > 6 ? 1 : 0;
-    // Closed, the left half lies face down on the right. Open, the two make a shallow V.
-    rightHalf.rotation.y = .16 * open;
-    leftHalf.rotation.y = lerp(-Math.PI + .02, -.16, open);
-    if (s.bA > .5 && !reduce) {
-      litT += dt;
-      if (litT > .62) { litT = 0; lit = (lit + 1) % words.length; drawPage(lit); }
-    }
-
-    // readout
-    const [rl, rmax, unit] = READ[step];
-    if (readLabel.textContent !== rl) readLabel.textContent = rl;
-    const val = step === 1 ? Math.round(30 * (1 - local)) : Math.round(rmax * local);
-    readVal.textContent = String(val).padStart(step === 1 ? 2 : 3, '0') + unit;
-    readBar.style.transform = `scaleX(${local})`;
-
-    // the stage dims once the story is over, so the page reads cleanly over it
-    canvas.style.opacity = f > 6 ? lerp(1, .38, clamp(f - 6)) : 1;
-
-    // annotations
-    const wantGroup = fRaw > 1.15 && fRaw < 5.9 && !narrow ? step : -1;
-    const W = innerWidth, H = innerHeight, copyRight = stepsEl.getBoundingClientRect().right;
-    labels.forEach((l, idx) => {
-      const show = l.group === wantGroup && (l.group !== 0 || local > .08) && (l.group !== 1 || local > .3) && (l.group !== 2 || local > .62);
-      let x = 0, y = 0;
-      if (show) { l.anchor.getWorldPosition(v); v.project(camera); x = (v.x * .5 + .5) * W; y = (-v.y * .5 + .5) * H; }
-      // a point that sits behind the copy keeps its label to itself
-      const clear = show && x > copyRight + 24 && y > 70 && y < H - 70;
-      if (clear !== l.on) { l.on = clear; l.el.classList.toggle('is-on', clear); }
-      if (!clear) { l.path.setAttribute('d', ''); l.dot.setAttribute('cx', -99); return; }
-      const tw = l.el.offsetWidth, reach = l.group === 0 ? 70 + (idx % 2) * 26 : 120;
-      // never over the copy: a label that would land on the text column goes right instead
-      const side = l.side < 0 && x - reach - 8 - tw < copyRight + 16 ? 1 : l.side;
-      const lx = x + side * reach, ly = y + l.lift * (l.group === 0 ? 36 : 54);
-      const tx = side > 0 ? lx + 8 : lx - 8 - tw;
-      l.el.style.transform = `translate(${Math.round(tx)}px, ${Math.round(ly - 18)}px)`;
-      l.path.setAttribute('d', `M${x},${y} L${lx},${ly} L${lx + side * 6},${ly}`);
-      l.dot.setAttribute('cx', x); l.dot.setAttribute('cy', y);
-    });
-
+    // once the day is over the scene steps back so the page reads cleanly
+    canvas.style.opacity = String(1 - .72 * smooth(clamp(d - 6)));
     renderer.render(scene, camera);
-    requestAnimationFrame(frameLoop);
+    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frameLoop);
-}
-
-if (!renderer) {
-  // No WebGL: the page still scrolls and steps still change.
-  (function loop() {
-    if (lenis) lenis.raf(performance.now());
-    const f = phase(); updateNav(scrollY);
-    if (f >= 1 && f < 6) setStep(clamp(Math.floor(f - 1), 0, 4));
-    requestAnimationFrame(loop);
-  })();
+  requestAnimationFrame(frame);
 }
