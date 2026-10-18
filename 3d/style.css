@@ -117,11 +117,13 @@ main { position: relative; z-index: 2; }
 
 @media (max-width: 860px) {
   .ch { min-height: 170vh; }
-  .ch__text { top: auto; bottom: 0; position: sticky; margin-top: 62vh; padding: 26px 22px 30px; border-radius: 26px;
+  .ch__text { position: sticky; top: 44svh; margin-top: 44svh; padding: 22px 20px 24px; border-radius: 26px; gap: 12px;
     background: rgba(10, 14, 32, .42); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, .12); color: var(--moon); }
   body[data-tone="light"] .ch__text { background: rgba(255, 255, 255, .5); border-color: rgba(20, 24, 42, .1); color: var(--ink); }
   .ch__facts { display: none; }
-  .ch__time b { font-size: 64px; }
+  .ch__time b { font-size: 56px; }
+  .ch h2 { font-size: 28px; }
+  .ch p { font-size: 15.5px; line-height: 1.5; }
 }
 
 /* ── between the prayers: a bento of small things ── */

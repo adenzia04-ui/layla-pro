@@ -4,7 +4,7 @@
  * where in it you are: -1 is the hour before Fajr (the hero), 0..5 are the
  * six chapters (Fajr, Dhuhr, Asr, Maghrib, Isha, the last third of the
  * night), and 6 is the rest of the page. The sky's colours, the sun on the
- * horizon, the stars, the phone's screen and finally the whole Earth with
+ * horizon, the stars, the object standing in for each hour and finally the whole Earth with
  * its Tahajjud lights are all read from `d`.
  */
 import * as THREE from 'three';
@@ -214,49 +214,228 @@ function build() {
   });
   spin.add(new THREE.Points(lg, lightMat));
 
-  /* ── the phone, showing the part of the app that belongs to this hour ── */
-  const phone = new THREE.Group(); scene.add(phone);
-  const PW = .66, PH = 1.38;
+  /* ── the things on stage: one for each hour of the day ── */
+  // They all stand in one place: to the right of the copy on a laptop, in
+  // the top half of the screen on a phone, above the text card.
+  const props = new THREE.Group(); scene.add(props);
+  scene.add(new THREE.HemisphereLight(0xfff4e6, 0x223355, .6));
+  const keyLight = new THREE.DirectionalLight(0xfff2e2, 1.7); keyLight.position.set(-1, 2.5, 6); scene.add(keyLight); // lights the stage from the viewer's side
+
+  // text drawn on a canvas, as a sprite or a plane
+  function label(lines, { w = 512, h = 160, align = 'center' } = {}) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    const draw = () => {
+      const g = c.getContext('2d'); g.clearRect(0, 0, w, h); g.textAlign = align; g.textBaseline = 'middle';
+      lines.forEach(([text, font, color, y]) => { g.font = font; g.fillStyle = color; g.fillText(text, align === 'center' ? w / 2 : 8, y); });
+      t.needsUpdate = true;
+    };
+    draw(); document.fonts.ready.then(draw);
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+    m.scale.set(w / h * .24, .24, 1); m.userData.draw = draw; return m;
+  }
+  const ivory = 0xf7f3ec, gold = 0xf0c98a;
+
+  /* Fajr — the day as a dial, the sun moving through the five prayers */
+  const dial = new THREE.Group(); props.add(dial);
+  const DR = .82;
+  const ringPts = []; for (let i = 0; i <= 200; i++) { const a = i / 200 * Math.PI * 2; ringPts.push(new THREE.Vector3(Math.cos(a) * DR, Math.sin(a) * DR, 0)); }
+  dial.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(ringPts), new THREE.LineBasicMaterial({ color: ivory, transparent: true, opacity: .25 })));
+  const tickPts = []; for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2, r2 = DR + (i % 4 ? .025 : .06); tickPts.push(new THREE.Vector3(Math.cos(a) * DR, Math.sin(a) * DR, 0), new THREE.Vector3(Math.cos(a) * r2, Math.sin(a) * r2, 0)); }
+  dial.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(tickPts), new THREE.LineBasicMaterial({ color: ivory, transparent: true, opacity: .35 })));
+  const A0 = Math.PI * 1.08, A1 = -Math.PI * .08; // Fajr on the left, Isha on the right, over the top
+  const dayArc = []; for (let i = 0; i <= 120; i++) { const a = lerp(A0, A1, i / 120); dayArc.push(new THREE.Vector3(Math.cos(a) * DR, Math.sin(a) * DR, 0)); }
+  dial.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(dayArc), new THREE.LineBasicMaterial({ color: gold, transparent: true })));
+  const TIMES = [['Fajr', '05:52', 0], ['Sunrise', '07:04', .13], ['Dhuhr', '13:09', .46], ['Asr', '16:23', .67], ['Maghrib', '19:12', .87], ['Isha', '20:22', 1]];
+  const dialMarks = TIMES.map(([n, t, k]) => {
+    const a = lerp(A0, A1, k), m = new THREE.Mesh(new THREE.SphereGeometry(.03, 20, 14), new THREE.MeshStandardMaterial({ color: ivory, emissive: 0x222222, transparent: true }));
+    m.position.set(Math.cos(a) * DR, Math.sin(a) * DR, 0); dial.add(m);
+    const l = label([[n, '600 46px "Clash Display", sans-serif', '#f7f3ec', 62], [t, '500 34px Satoshi, sans-serif', 'rgba(247,243,236,.7)', 112]], { w: 320, h: 160 });
+    l.scale.set(.58, .29, 1); l.position.set(Math.cos(a) * (DR + .32), Math.sin(a) * (DR + .24), 0); dial.add(l);
+    return { m, k };
+  });
+  const dialSun = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow('rgba(255,250,236,1)', 'rgba(255,190,120,.45)'), transparent: true, depthWrite: false }));
+  dialSun.scale.setScalar(.42); dial.add(dialSun);
+  const dialCentre = label([['Next', '500 34px Satoshi, sans-serif', 'rgba(247,243,236,.6)', 40], ['Dhuhr', '600 72px "Clash Display", sans-serif', '#f7f3ec', 100], ['in 1:42:07', '500 34px Satoshi, sans-serif', '#ffb48a', 156]], { w: 400, h: 190 });
+  dialCentre.scale.set(.78, .37, 1); dial.add(dialCentre);
+
+  /* Dhuhr — the apps you chose, held behind a ring for thirty minutes */
+  const focus = new THREE.Group(); props.add(focus);
   const rr = (w, h, r) => { const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
     s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
     s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
     s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s; };
-  const body = new THREE.ExtrudeGeometry(rr(PW, PH, .1), { depth: .045, bevelEnabled: true, bevelThickness: .014, bevelSize: .014, bevelSegments: 5, curveSegments: 18 });
-  body.translate(0, 0, -.052);
-  phone.add(new THREE.Mesh(body, new THREE.MeshStandardMaterial({ color: 0xd9d3c7, metalness: .9, roughness: .28 })));
-  const screenMat = new THREE.ShaderMaterial({
-    uniforms: { a: { value: null }, b: { value: null }, mixAB: { value: 0 }, asp: { value: PW / PH } },
-    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-    fragmentShader: `uniform sampler2D a, b; uniform float mixAB, asp; varying vec2 vUv;
-      float rb(vec2 p, vec2 s, float r){ vec2 q = abs(p)-s+r; return length(max(q,0.))+min(max(q.x,q.y),0.)-r; }
-      void main(){ vec2 p = (vUv-.5)*vec2(asp,1.); float m = 1.-smoothstep(0.,.004, rb(p, vec2(asp*.5,.5), .064));
-        vec3 c = mix(texture2D(a, vUv).rgb, texture2D(b, vUv).rgb, mixAB);
-        float glass = smoothstep(.0,.9, vUv.y - vUv.x*.6) * .06;
-        gl_FragColor = vec4(c + glass, m);
-        #include <colorspace_fragment>
-      }`,
-    transparent: true,
-  });
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(PW - .028, PH - .028), screenMat); screen.position.z = .01; phone.add(screen);
+  const appGeo = new THREE.ExtrudeGeometry(rr(.2, .2, .052), { depth: .03, bevelEnabled: true, bevelThickness: .01, bevelSize: .01, bevelSegments: 3, curveSegments: 10 });
+  appGeo.center();
+  const APPS = [0xe1306c, 0xff2d55, 0xff0000, 0x1d9bf0, 0x25d366, 0x5865f2, 0xfffc00, 0x222222, 0xe50914, 0xff6f00];
+  const greyC = new THREE.Color(0x4a4e5c);
+  const apps = APPS.map((c, i) => { const mat = new THREE.MeshStandardMaterial({ color: c, roughness: .35, metalness: .15, transparent: true });
+    const m = new THREE.Mesh(appGeo, mat); m.userData = { base: new THREE.Color(c), ph: i / APPS.length * Math.PI * 2, tilt: rnd() - .5 }; focus.add(m); return m; });
+  const shieldRing = new THREE.Mesh(new THREE.TorusGeometry(.42, .012, 16, 120), new THREE.MeshBasicMaterial({ color: gold, transparent: true }));
+  focus.add(shieldRing);
+  const shieldDisc = new THREE.Mesh(new THREE.CircleGeometry(.41, 64), new THREE.MeshBasicMaterial({ color: 0x0d1630, transparent: true, opacity: .82 }));
+  shieldDisc.position.z = -.005; focus.add(shieldDisc);
+  const shieldText = label([['Dhuhr', '600 80px "Clash Display", sans-serif', '#f7f3ec', 70], ['apps held', '500 34px Satoshi, sans-serif', 'rgba(247,243,236,.7)', 130], ['26 minutes left', '600 36px Satoshi, sans-serif', '#ffb48a', 180]], { w: 420, h: 220 });
+  shieldText.scale.set(.74, .388, 1); shieldText.position.z = .02; focus.add(shieldText);
 
-  const shieldCanvas = document.createElement('canvas'); shieldCanvas.width = 588; shieldCanvas.height = 1280;
-  const shield = new THREE.CanvasTexture(shieldCanvas); shield.colorSpace = THREE.SRGBColorSpace;
-  function drawShield() {
-    const g = shieldCanvas.getContext('2d'), W = 588, H = 1280;
-    const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0d1c36'); bg.addColorStop(1, '#050b18'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    g.textAlign = 'center';
-    g.fillStyle = 'rgba(246,241,231,.55)'; g.font = '600 26px Satoshi, sans-serif'; g.fillText('PRAYER FOCUS', W / 2, 360);
-    g.fillStyle = '#f6f1e7'; g.font = '600 110px "Clash Display", sans-serif'; g.fillText('Dhuhr', W / 2, 490);
-    g.fillStyle = 'rgba(246,241,231,.74)'; g.font = '400 31px Satoshi, sans-serif'; g.fillText('This app is paused', W / 2, 580); g.fillText('until you have prayed.', W / 2, 624);
-    g.fillStyle = '#d9b26a'; g.font = '500 32px Satoshi, sans-serif'; g.fillText('26 minutes left', W / 2, 720);
-    g.beginPath(); g.roundRect(70, 800, W - 140, 104, 52); g.fill();
-    g.fillStyle = '#060d1b'; g.font = '700 34px Satoshi, sans-serif'; g.fillText('I am praying now', W / 2, 864);
-    g.fillStyle = 'rgba(246,241,231,.62)'; g.font = '400 30px Satoshi, sans-serif'; g.fillText('I missed this prayer', W / 2, 990); g.fillText('Close', W / 2, 1060);
-    shield.needsUpdate = true;
+  /* Asr — the mushaf, opening, the recited word lit in gold */
+  const book = new THREE.Group(); props.add(book);
+  const BW = .62, BH = .9;
+  const pageCanvas = document.createElement('canvas'); pageCanvas.width = 620; pageCanvas.height = 900;
+  const pageTex = new THREE.CanvasTexture(pageCanvas); pageTex.colorSpace = THREE.SRGBColorSpace; pageTex.anisotropy = 8;
+  const leftCanvas = document.createElement('canvas'); leftCanvas.width = 620; leftCanvas.height = 900;
+  const leftTex = new THREE.CanvasTexture(leftCanvas); leftTex.colorSpace = THREE.SRGBColorSpace; leftTex.anisotropy = 8;
+  // Al-Fatihah, word by word, so one word at a time can be lit as it is recited.
+  const FATIHA = [
+    'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+    'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ',
+    'ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+    'مَٰلِكِ يَوْمِ ٱلدِّينِ',
+    'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
+    'ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ',
+    'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
+  ];
+  const DIGITS = '٠١٢٣٤٥٦٧٨٩';
+  const words = []; FATIHA.forEach((a, i) => a.split(' ').forEach((w, k, arr) => words.push({ w, ayah: i, last: k === arr.length - 1 })));
+  function pageFrame(g, W, H) {
+    g.fillStyle = '#efe5cf'; g.fillRect(0, 0, W, H);
+    const grd = g.createRadialGradient(W / 2, H / 2, H * .2, W / 2, H / 2, H * .75); grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(90,60,20,.18)');
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    g.strokeStyle = '#a8833f'; g.lineWidth = 3; g.strokeRect(34, 34, W - 68, H - 68);
+    g.lineWidth = 1; g.strokeRect(44, 44, W - 88, H - 88);
   }
-  document.fonts.ready.then(drawShield);
-  const SCREENS = [tex('screens/home.webp'), shield, tex('screens/mushaf.webp'), tex('screens/friends.webp'), tex('screens/profile.webp'), tex('screens/tahajjud.webp')];
-  screenMat.uniforms.a.value = SCREENS[0]; screenMat.uniforms.b.value = SCREENS[1];
+  function drawLeft() {
+    const g = leftCanvas.getContext('2d'), W = 620, H = 900; pageFrame(g, W, H);
+    g.textAlign = 'center'; g.direction = 'rtl'; g.fillStyle = '#2b2117';
+    g.strokeStyle = '#a8833f'; g.lineWidth = 2; g.beginPath(); g.roundRect(110, 120, W - 220, 92, 46); g.stroke();
+    g.font = '700 46px Amiri, serif'; g.fillText('سُورَةُ ٱلْفَاتِحَةِ', W / 2, 180);
+    g.font = '400 30px Amiri, serif'; g.fillStyle = '#6b5434';
+    g.fillText('مَكِّيَّة · ٧ آيَات', W / 2, 270);
+    g.direction = 'ltr'; g.font = '500 36px "Clash Display", sans-serif'; g.fillStyle = '#3a2e20';
+    g.fillText('The Opening', W / 2, 470);
+    g.font = '500 20px Satoshi, sans-serif'; g.fillStyle = '#7a6444';
+    g.fillText('PAGE 1 OF 604', W / 2, 520);
+    g.strokeStyle = '#a8833f'; g.beginPath(); g.moveTo(W / 2 - 60, 600); g.lineTo(W / 2 + 60, 600); g.stroke();
+    g.font = '400 21px Satoshi, sans-serif'; g.fillStyle = '#7a6444';
+    g.fillText('The word lights as it is recited.', W / 2, 650);
+    leftTex.needsUpdate = true;
+  }
+  function drawPage(lit) {
+    const g = pageCanvas.getContext('2d'), W = 620, H = 900; pageFrame(g, W, H);
+    g.direction = 'rtl'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    const size = 34; g.font = `400 ${size}px Amiri, serif`;
+    const left = 78, right = W - 78, lineH = 74; let x = right, y = 150;
+    const space = g.measureText(' ').width;
+    words.forEach((o, i) => {
+      const w = g.measureText(o.w).width;
+      const mark = o.last ? DIGITS[o.ayah + 1] : '';
+      const markW = mark ? size * 1.15 : 0;
+      if (x - w - markW < left) { x = right; y += lineH; }
+      if (i === lit) { g.fillStyle = 'rgba(217,178,106,.32)'; g.beginPath(); g.roundRect(x - w - 8, y - size * 1.05, w + 16, size * 1.5, 10); g.fill(); g.fillStyle = '#8a6420'; }
+      else g.fillStyle = '#231a12';
+      g.fillText(o.w, x, y); x -= w + space;
+      if (mark) {
+        const cx = x - markW / 2 + space / 2, cy = y - size * .32;
+        g.strokeStyle = '#a8833f'; g.lineWidth = 1.6; g.beginPath(); g.arc(cx, cy, size * .5, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = '#6b5434'; g.font = `400 ${size * .62}px Amiri, serif`; g.textAlign = 'center';
+        g.fillText(mark, cx, cy + size * .22); g.textAlign = 'right'; g.font = `400 ${size}px Amiri, serif`;
+        x -= markW + space;
+      }
+    });
+    pageTex.needsUpdate = true;
+  }
+  // A solid book: two page blocks in leather, opaque, so nothing shows through.
+  // Each half is built lying open, flat, facing you; the spine is the y axis.
+  const T = .05, CO = .012; // page-block thickness, cover overhang
+  const paperMat = new THREE.MeshStandardMaterial({ color: 0xe6d9bd, roughness: .92 });
+  const edgeMat = new THREE.MeshStandardMaterial({ color: 0xd8c8a4, roughness: .95 });
+  const coverMat = new THREE.MeshStandardMaterial({ color: 0x3b2516, roughness: .55, metalness: .1 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xc19a52, roughness: .3, metalness: .85 });
+  function half(dir, map) {
+    const g = new THREE.Group();
+    const block = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, T), [edgeMat, edgeMat, edgeMat, edgeMat, paperMat, paperMat]);
+    block.position.set(dir * BW / 2, 0, -T / 2); g.add(block);
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(BW + CO, BH + CO * 2, .014), coverMat);
+    cover.position.set(dir * (BW + CO) / 2, 0, -T - .007); g.add(cover);
+    const rule = new THREE.Mesh(new THREE.BoxGeometry(BW + CO + .002, .006, .016), goldMat); // gilt line on the cover edge
+    rule.position.set(dir * (BW + CO) / 2, -(BH / 2 + CO - .003), -T - .007); g.add(rule);
+    const page = new THREE.Mesh(new THREE.PlaneGeometry(BW * .99, BH * .99), new THREE.MeshStandardMaterial({ map, roughness: .9 }));
+    page.position.set(dir * BW / 2, 0, .0012); g.add(page);
+    return g;
+  }
+  const rightHalf = half(1, pageTex), leftHalf = half(-1, leftTex);
+  const spine = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, BH + CO * 2, 16, 1, true, Math.PI / 2, Math.PI), coverMat);
+  spine.position.z = -T - .01;
+  book.add(rightHalf, leftHalf, spine);
+
+  /* Maghrib — friends, five dots each, filling as their day is prayed */
+  const friends = new THREE.Group(); props.add(friends);
+  const FRIENDS = [['You', 5], ['Amira', 4], ['Yusuf', 5], ['Hana', 3]];
+  const dotGeo = new THREE.SphereGeometry(.05, 24, 16);
+  const friendDots = [];
+  FRIENDS.forEach(([name, done], r) => {
+    const y = .42 - r * .28;
+    const plate = new THREE.Mesh(new THREE.ExtrudeGeometry(rr(1.5, .22, .11), { depth: .015, bevelEnabled: false, curveSegments: 12 }), new THREE.MeshStandardMaterial({ color: 0x1a2340, roughness: .6, transparent: true, opacity: .85 }));
+    plate.position.set(0, y, -.03); friends.add(plate);
+    const l = label([[name, '600 40px "Clash Display", sans-serif', '#f7f3ec', 50]], { w: 300, h: 100, align: 'left' }); l.scale.set(.48, .16, 1); l.position.set(-.38, y, .01); friends.add(l);
+    for (let k = 0; k < 5; k++) {
+      const m = new THREE.Mesh(dotGeo, new THREE.MeshStandardMaterial({ color: 0x3a4466, roughness: .3, metalness: .2, transparent: true, emissive: 0x000000 }));
+      m.position.set(.06 + k * .14, y, .02); friends.add(m); friendDots.push({ m, order: k + r * .15, on: k < done });
+    }
+  });
+  const fFill = new THREE.Color(0x2e9e80), fEmpty = new THREE.Color(0x3a4466);
+
+  /* Isha — the year: 365 dots, and the counts that matter */
+  const year = new THREE.Group(); props.add(year);
+  const yearMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.016, 10, 8), new THREE.MeshStandardMaterial({ roughness: .4, transparent: true }), 365);
+  year.add(yearMesh);
+  const C_ALL = new THREE.Color(0x2e9e80), C_OPEN = new THREE.Color(0xe0a23c), C_MISS = new THREE.Color(0xcf5c6b), C_NOT = new THREE.Color(0x2c3350);
+  const TODAY = 290, yFrom = [], yTo = [];
+  for (let dd = 0; dd < 365; dd++) {
+    const wk = Math.floor(dd / 7), wd = dd % 7;
+    yTo.push(new THREE.Vector3((wk - 26) * .042, (3 - wd) * .042, 0));
+    const u = rnd() * 2 - 1, th = rnd() * Math.PI * 2, rr2 = .7 + rnd() * .6;
+    yFrom.push(new THREE.Vector3(Math.sqrt(1 - u * u) * Math.cos(th) * rr2, u * rr2, Math.sqrt(1 - u * u) * Math.sin(th) * rr2 * .4));
+    const r = rnd();
+    yearMesh.setColorAt(dd, dd > TODAY ? C_NOT : dd === TODAY ? C_OPEN : dd > TODAY - 37 ? C_ALL : r < .82 ? C_ALL : r < .91 ? C_OPEN : C_MISS);
+  }
+  yearMesh.instanceColor.needsUpdate = true;
+  const yM = new THREE.Matrix4(), yQ = new THREE.Quaternion(), yS = new THREE.Vector3(1, 1, 1), yP = new THREE.Vector3();
+  const counts = [['37', 'days in a row'], ['1,240', 'prayers this year'], ['32', 'Tahajjud nights']].map(([n, t], i) => {
+    const l = label([[n, '600 84px "Clash Display", sans-serif', '#f7f3ec', 64], [t, '500 30px Satoshi, sans-serif', 'rgba(247,243,236,.7)', 132]], { w: 360, h: 170 });
+    l.scale.set(.62, .293, 1); l.position.set((i - 1) * .72, .5, 0); year.add(l); return l;
+  });
+  // the key, each dot in its own colour
+  const legend = label([], { w: 720, h: 80 });
+  const drawLegend = () => {
+    const c = legend.material.map.image, g = c.getContext('2d'); g.clearRect(0, 0, 720, 80); g.textBaseline = 'middle'; g.font = '500 26px Satoshi, sans-serif';
+    let x = 60;
+    [['#2e9e80', 'all five'], ['#e0a23c', 'still open'], ['#cf5c6b', 'missed one']].forEach(([col, t]) => {
+      g.fillStyle = col; g.beginPath(); g.arc(x, 40, 9, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(247,243,236,.78)'; g.fillText(t, x + 20, 41); x += 40 + g.measureText(t).width + 50;
+    });
+    legend.material.map.needsUpdate = true;
+  };
+  drawLegend(); document.fonts.ready.then(drawLegend);
+  legend.scale.set(1.2, .133, 1); legend.position.set(0, -.34, 0); year.add(legend);
+
+  const STAGE = [dial, focus, book, friends, year];
+  const opacityOf = new Map();
+  function setAlpha(obj, a) {
+    obj.visible = a > .005;
+    obj.traverse((m) => {
+      if (!m.material) return;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      mats.forEach((mat) => {
+        if (!opacityOf.has(mat)) opacityOf.set(mat, mat.opacity);
+        const v = opacityOf.get(mat) * a, t = v < .999;
+        if (mat.transparent !== t && !(mat instanceof THREE.SpriteMaterial)) { mat.transparent = t || opacityOf.get(mat) < 1; mat.needsUpdate = true; }
+        mat.opacity = v;
+      });
+    });
+  }
+  let lit = 0, litT = 0;
+  document.fonts.ready.then(() => { drawLeft(); drawPage(0); });
 
   /* ── frame ── */
   let narrow = false;
@@ -310,19 +489,69 @@ function build() {
     sunLight.position.copy(sun.position); sunLight.intensity = .6 + clamp(elev / 40) * 1.6;
     lightMat.uniforms.uOn.value = orbit * (1 - smooth(clamp((d - 6) * 1.5))); lightMat.uniforms.uTime.value = time;
 
-    // The phone rises with Fajr, changes its screen at each prayer, and steps back for the night.
-    const show = smooth(clamp((d + .45) / .5)) * (1 - smooth(clamp((d - 5.05) / .45)));
-    const base = narrow ? [0, 1.05, 1.6, .68] : [1.45, .4, 1.9, 1];
-    phone.position.set(base[0] + pmx * .1, base[1] - (1 - show) * 3.2 + Math.sin(time * .8) * .03, base[2]);
-    phone.scale.setScalar(base[3]);
-    const ci = clamp(Math.floor(d), 0, 5);
-    phone.rotation.set(-.06 - pmy * .12, (ci % 2 ? .22 : -.22) * (narrow ? .5 : 1) + pmx * .3, (ci % 2 ? -.03 : .03));
-    phone.visible = show > .01;
-    // crossfade from this chapter's screen into the next across the boundary
-    const local = d - Math.floor(d);
-    const a = clamp(Math.floor(d), 0, 5), b = clamp(a + 1, 0, 5);
-    screenMat.uniforms.a.value = SCREENS[a]; screenMat.uniforms.b.value = SCREENS[b];
-    screenMat.uniforms.mixAB.value = a === b ? 0 : smooth(clamp((local - .82) / .18));
+    // The stage: each hour's object rises in with its chapter and leaves with it.
+    const ci = clamp(Math.floor(d), 0, 5), local = clamp(d - Math.floor(d));
+    props.position.set(narrow ? 0 : 1.62, narrow ? 1.18 : .42, narrow ? 1.6 : 1.3);
+    props.scale.setScalar(narrow ? .6 : 1.08);
+    props.rotation.set(-pmy * .15, pmx * .35, 0);
+    STAGE.forEach((obj, i) => {
+      // in once its chapter has begun, out before the next one arrives, so two never overlap
+      const w = smooth(clamp((d - i + .08) / .22)) * (1 - smooth(clamp((d - i - .86) / .14)));
+      setAlpha(obj, w);
+      obj.position.y = (1 - w) * -.35;
+      obj.scale.setScalar(.88 + .12 * w);
+    });
+    const t = time * (reduce ? 0 : 1);
+    if (dial.visible) {
+      const k = ci === 0 ? clamp(local * 1.15) : 1;
+      const a = lerp(A0, A1, k);
+      dialSun.position.set(Math.cos(a) * DR, Math.sin(a) * DR, .01);
+      dialMarks.forEach(({ m, k: mk }) => m.scale.setScalar(Math.abs(mk - k) < .05 ? 1.8 : 1));
+      dial.rotation.set(-.15, -.25, 0);
+    }
+    if (focus.visible) {
+      const hold = ci === 1 ? smooth(clamp((local - .2) / .35)) : ci > 1 ? 1 : 0;
+      apps.forEach((m) => {
+        const a = m.userData.ph + t * .5 * (1 - hold * .9);
+        const r = lerp(.62, .78, hold);
+        m.position.set(Math.cos(a) * r, Math.sin(a) * r * .8, lerp(.05, -.25, hold) + Math.sin(a * 2) * .06);
+        m.rotation.set(m.userData.tilt * .5, Math.cos(a) * .5, a * .2);
+        m.material.color.copy(m.userData.base).lerp(greyC, hold * .8);
+      });
+      shieldRing.scale.setScalar(.6 + .4 * hold); shieldRing.material.opacity = hold;
+      shieldDisc.scale.setScalar(.6 + .4 * hold); shieldDisc.material.opacity = .82 * hold;
+      shieldText.material.opacity = hold; shieldText.visible = hold > .02;
+      focus.rotation.set(0, -.2, 0);
+    }
+    if (book.visible) {
+      const open = ci === 2 ? smooth(clamp(local / .4)) : ci > 2 ? 1 : 0;
+      rightHalf.rotation.y = .16 * open;
+      leftHalf.rotation.y = lerp(-Math.PI + .02, -.16, open);
+      book.rotation.set(-.42, -.1, 0); book.scale.multiplyScalar(1.05);
+      if (open > .6 && !reduce) { litT += dt; if (litT > .6) { litT = 0; lit = (lit + 1) % words.length; drawPage(lit); } }
+    }
+    if (friends.visible) {
+      const fill = ci === 3 ? clamp(local * 1.6) : ci > 3 ? 1 : 0;
+      friendDots.forEach(({ m, order, on }) => {
+        const lit2 = on && fill * 5.6 > order;
+        m.material.color.copy(lit2 ? fFill : fEmpty); m.material.emissive.set(lit2 ? 0x0d3a2e : 0x000000);
+        m.scale.setScalar(lit2 ? 1.12 : .9);
+      });
+      friends.rotation.set(-.1, -.28, 0);
+    }
+    if (year.visible) {
+      const settle = ci === 4 ? smooth(clamp(local / .5)) : ci > 4 ? 1 : 0;
+      for (let dd = 0; dd < 365; dd++) {
+        const e = smooth(clamp(settle * 1.3 - dd / 365 * .3));
+        yP.lerpVectors(yFrom[dd], yTo[dd], e);
+        yS.setScalar(dd === TODAY ? 1.5 + Math.sin(t * 3) * .25 : 1);
+        yM.compose(yP, yQ, yS); yearMesh.setMatrixAt(dd, yM);
+      }
+      yearMesh.instanceMatrix.needsUpdate = true;
+      counts.forEach((l) => { l.material.opacity = settle; });
+      legend.material.opacity = settle;
+      year.rotation.set(-.08, -.22, 0);
+    }
 
     // once the day is over the scene steps back so the page reads cleanly
     canvas.style.opacity = String(1 - .72 * smooth(clamp(d - 6)));
