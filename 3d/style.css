@@ -150,6 +150,9 @@ main { position: relative; z-index: 2; }
 @media (max-width: 560px) {
   .bento { grid-template-columns: 1fr; }
   .tile--wide, .tile--tall { grid-column: auto; grid-row: auto; }
+  .bento { grid-auto-rows: auto; }
+  .tile--tall { align-content: start; gap: 18px; }
+  .tile--tall img { width: 56%; margin: 0 auto; }
   .tile--wide { grid-template-columns: 1fr; }
   .tile--wide img { margin: 0 auto; }
 }
