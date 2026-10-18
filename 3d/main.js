@@ -510,24 +510,29 @@ function buildScene() {
     });
     pageTex.needsUpdate = true;
   }
-  const paperMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc2, roughness: .9, transparent: true });
-  const coverMat = new THREE.MeshStandardMaterial({ color: 0x2a1b12, roughness: .6, metalness: .15, transparent: true });
-  const goldMat = new THREE.MeshStandardMaterial({ color: 0xb8904a, roughness: .35, metalness: .9, transparent: true });
-  const hinge = (geo) => { geo.translate(BW / 2, 0, 0); return geo; };
-  const N_PAGES = 28;
-  const pages = [];
-  const coverL = new THREE.Mesh(hinge(new THREE.BoxGeometry(BW + .03, BH + .04, .02)), coverMat);
-  const coverR = new THREE.Mesh(hinge(new THREE.BoxGeometry(BW + .03, BH + .04, .02)), coverMat);
-  book.add(coverL, coverR);
-  const trimL = new THREE.Mesh(hinge(new THREE.BoxGeometry(BW + .035, BH + .045, .004)), goldMat); trimL.position.z = -.012; coverL.add(trimL);
-  for (let i = 0; i < N_PAGES; i++) {
-    const p = new THREE.Mesh(hinge(new THREE.BoxGeometry(BW, BH, .0035)), paperMat);
-    book.add(p); pages.push(p);
+  // A solid book: two page blocks in leather, opaque, so nothing shows through.
+  // Each half is built lying open, flat, facing you; the spine is the y axis.
+  const T = .05, CO = .012; // page-block thickness, cover overhang
+  const paperMat = new THREE.MeshStandardMaterial({ color: 0xe6d9bd, roughness: .92 });
+  const edgeMat = new THREE.MeshStandardMaterial({ color: 0xd8c8a4, roughness: .95 });
+  const coverMat = new THREE.MeshStandardMaterial({ color: 0x3b2516, roughness: .55, metalness: .1 });
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xc19a52, roughness: .3, metalness: .85 });
+  function half(dir, map) {
+    const g = new THREE.Group();
+    const block = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, T), [edgeMat, edgeMat, edgeMat, edgeMat, paperMat, paperMat]);
+    block.position.set(dir * BW / 2, 0, -T / 2); g.add(block);
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(BW + CO, BH + CO * 2, .014), coverMat);
+    cover.position.set(dir * (BW + CO) / 2, 0, -T - .007); g.add(cover);
+    const rule = new THREE.Mesh(new THREE.BoxGeometry(BW + CO + .002, .006, .016), goldMat); // gilt line on the cover edge
+    rule.position.set(dir * (BW + CO) / 2, -(BH / 2 + CO - .003), -T - .007); g.add(rule);
+    const page = new THREE.Mesh(new THREE.PlaneGeometry(BW * .99, BH * .99), new THREE.MeshStandardMaterial({ map, roughness: .9 }));
+    page.position.set(dir * BW / 2, 0, .0012); g.add(page);
+    return g;
   }
-  const leftGeo = new THREE.PlaneGeometry(BW * .985, BH * .985); leftGeo.translate(-BW / 2, 0, 0); // hinged on its right edge
-  const pageL = new THREE.Mesh(leftGeo, new THREE.MeshStandardMaterial({ map: leftTex, roughness: .95, transparent: true }));
-  const pageR = new THREE.Mesh(hinge(new THREE.PlaneGeometry(BW * .985, BH * .985)), new THREE.MeshStandardMaterial({ map: pageTex, roughness: .95, transparent: true }));
-  book.add(pageL, pageR);
+  const rightHalf = half(1, pageTex), leftHalf = half(-1, leftTex);
+  const spine = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, BH + CO * 2, 16, 1, true, Math.PI / 2, Math.PI), coverMat);
+  spine.position.z = -T - .01;
+  book.add(rightHalf, leftHalf, spine);
 
   /* ── annotations ── */
   const anno = $('#anno'), annoSvg = $('.anno__svg', anno), stepsEl = $('.story__steps');
@@ -558,8 +563,8 @@ function buildScene() {
     { f: 2.5, cam: [0, .3, 4.2],  look: [.55, 0, 0], globe: [2.2, .2, -2.6, .8], gA: .55, ring: .25, phone: [.8, 0, .55, -.38], pA: 1, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .04, bloom: .2 },
     { f: 3.5, cam: [0, .35, 4.0], look: [.6, 0, 0], globe: [2.4, .3, -3.2, .75], gA: .35, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 1, book: [1, -2.6, .4], bA: 0, spin: .04, bloom: .2 },
     { f: 4.5, cam: [0, .2, 4.1],  look: [.55, .05, 0], globe: [1.05, 0, 0, 1.08], gA: 1, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [1, -2.6, .4], bA: 0, spin: .015, bloom: 1 },
-    { f: 5.5, cam: [0, .55, 3.9], look: [.6, 0, 0], globe: [2.1, .25, -3, .7],  gA: .45, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.62, -.02, .9], bA: 1, spin: .03, bloom: .6 },
-    { f: 7,   cam: [0, .3, 5.2],  look: [0, 0, 0],   globe: [0, 0, -1.5, 1.2],  gA: .32, ring: .2, phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.62, -2.6, .9], bA: 0, spin: .05, bloom: .55 },
+    { f: 5.5, cam: [0, .55, 3.9], look: [.6, 0, 0], globe: [2.1, .25, -3, .7],  gA: .45, ring: 0,  phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.98, .02, .55], bA: 1, spin: .03, bloom: .6 },
+    { f: 7,   cam: [0, .3, 5.2],  look: [0, 0, 0],   globe: [0, 0, -1.5, 1.2],  gA: .32, ring: .2, phone: [2.4, -.3, -1.2, -.7], pA: 0, dots: 0, book: [.98, -2.6, .55], bA: 0, spin: .05, bloom: .55 },
   ];
   function at(f) {
     let i = 0; while (i < K.length - 2 && f > K[i + 1].f) i++;
@@ -578,7 +583,10 @@ function buildScene() {
       mats.forEach((mat) => {
         if (!opacityOf.has(mat)) opacityOf.set(mat, mat.uniforms?.uOpacity ? 1 : mat.opacity);
         const base = opacityOf.get(mat);
-        if (mat.uniforms?.uOpacity) mat.uniforms.uOpacity.value = base * a; else mat.opacity = base * a;
+        if (mat.uniforms?.uOpacity) { mat.uniforms.uOpacity.value = base * a; return; }
+        const t = base * a < .999;
+        if (mat.transparent !== t) { mat.transparent = t; mat.needsUpdate = true; }
+        mat.opacity = base * a;
       });
     });
   }
@@ -691,22 +699,12 @@ function buildScene() {
 
     // the mushaf opens, then the recitation lights one word at a time
     book.position.set(s.book[0] * xs, s.book[1] + yl * .8, s.book[2]);
-    book.rotation.set(-.5 + pmy * .08, -.2 + pmx * .15, 0);
+    book.rotation.set(-.42 + pmy * .08, -.12 + pmx * .15, 0); book.scale.setScalar(narrow ? .9 : .82);
     setAlpha(book, s.bA);
-    const open = step === 4 ? smooth(clamp(local / .55)) : f > 6 ? 1 : 0;
-    // Pages turn about the spine (local y axis). Angle 0 lies to the right,
-    // facing you; PI lies to the left. Open, the two halves make a shallow V.
-    const leftAngle = lerp(.015, Math.PI - .16, open), rightAngle = lerp(0, .16, open);
-    coverR.rotation.y = rightAngle; coverR.position.z = -.03;
-    coverL.rotation.y = leftAngle; coverL.position.z = lerp(.03, -.03, open);
-    pages.forEach((p, i) => {
-      const half = i < N_PAGES / 2, k = (half ? i : i - N_PAGES / 2) / (N_PAGES / 2);
-      p.rotation.y = half ? leftAngle - (1 - k) * .05 * open : rightAngle + k * .05 * open;
-      p.position.z = half ? lerp(.026 - k * .022, -.024 + k * .02, open) : -.026 + k * .022;
-    });
-    pageR.rotation.y = rightAngle + .051 * open; pageR.position.z = .003;
-    pageL.rotation.y = leftAngle - Math.PI - .051 * open; pageL.position.z = .003;
-    pageL.visible = pageR.visible = open > .25 && s.bA > .01;
+    const open = step === 4 ? smooth(clamp(local / .5)) : f > 6 ? 1 : 0;
+    // Closed, the left half lies face down on the right. Open, the two make a shallow V.
+    rightHalf.rotation.y = .16 * open;
+    leftHalf.rotation.y = lerp(-Math.PI + .02, -.16, open);
     if (s.bA > .5 && !reduce) {
       litT += dt;
       if (litT > .62) { litT = 0; lit = (lit + 1) % words.length; drawPage(lit); }
